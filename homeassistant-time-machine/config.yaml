@@ -1,0 +1,34 @@
+{
+  "name": "Home Assistant Time Machine",
+  "version": "0.1.0",
+  "slug": "homeassistant-time-machine",
+  "description": "Browse and restore Home Assistant configuration backups.",
+  "url": "https://github.com/your-github-username/HomeAssistantTimeMachine",
+  "arch": ["amd64", "aarch64"],
+  "startup": "application",
+  "boot": "auto",
+  "init": false,
+  "ports": {
+    "3000/tcp": null
+  },
+  "ports_description": {
+    "3000/tcp": "Web interface"
+  },
+  "host_network": true,
+  "map": [
+    "config:rw",
+    "media:rw"
+  ],
+  "options": {
+    "HA_URL": "http://homeassistant.local:8123",
+    "HA_TOKEN": "",
+    "BACKUP_FOLDER_PATH": "/media/backups/homeassistant-time-machine",
+    "LIVE_CONFIG_PATH": "/config"
+  },
+  "schema": {
+    "HA_URL": "str",
+    "HA_TOKEN": "str",
+    "BACKUP_FOLDER_PATH": "str",
+    "LIVE_CONFIG_PATH": "str"
+  }
+}
