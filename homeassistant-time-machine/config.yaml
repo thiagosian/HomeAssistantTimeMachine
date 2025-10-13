@@ -1,6 +1,6 @@
 {
   "name": "Home Assistant Time Machine",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "slug": "homeassistant-time-machine",
   "description": "Browse and restore Home Assistant configuration backups.",
   "url": "https://github.com/your-github-username/HomeAssistantTimeMachine",
@@ -18,5 +18,6 @@
   "map": [
     "config:rw",
     "media:rw"
-  ]
+  ],
+  "webui": "http://[HOST]:[PORT:3000]"
 }
