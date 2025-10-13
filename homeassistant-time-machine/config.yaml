@@ -14,7 +14,7 @@
   "ports_description": {
     "3000/tcp": "Web interface"
   },
-  "host_network": true,
+  "host_network": false,
   "map": [
     "config:rw",
     "media:rw"
