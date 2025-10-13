@@ -31,6 +31,40 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
     *   **Backup Folder Path:** Set the path to the directory where your backups are stored.
     *   **Home Assistant URL & Token:** Set the URL and a Long-Lived Access Token for your Home Assistant instance. This is needed for the feature that reloads Home Assistant after a restore.
 
+## Creating Backups
+
+This addon relies on having file-based backups of your Home Assistant configuration. You need to set up a process to create these backups regularly.
+
+Here is an example of a simple shell script that you can use to create timestamped backups of your YAML files:
+
+```bash
+#!/bin/bash
+
+# The directory where your Home Assistant configuration is stored.
+# Adjust this to your setup.
+CONFIG_DIR="/config"
+
+# The root directory where you want to store your backups.
+# This should match the "Backup Folder Path" you set in the addon's UI.
+BACKUP_DIR="/media/backups/yaml"
+
+# Create a timestamped directory for the new backup.
+DATE=$(date +%Y-%m-%d-%H%M%S)
+YEAR=$(date +%Y)
+MONTH=$(date +%m)
+BACKUP_PATH="$BACKUP_DIR/$YEAR/$MONTH/$DATE"
+mkdir -p "$BACKUP_PATH"
+
+# Copy the YAML files to the backup directory.
+cp "$CONFIG_DIR"/*.yaml "$BACKUP_PATH"
+
+echo "Backup created at $BACKUP_PATH"
+```
+
+**Important:**
+*   You need to adjust the `CONFIG_DIR` and `BACKUP_DIR` variables in the script to match your Home Assistant setup.
+*   You should run this script at a regular interval (e.g., every 24 hours) to have up-to-date backups. You can use a `cron` job on your host machine or a Home Assistant automation with a `shell_command` integration to automate this.
+
 ## Configuration
 
 The addon can be configured through the Home Assistant UI.
