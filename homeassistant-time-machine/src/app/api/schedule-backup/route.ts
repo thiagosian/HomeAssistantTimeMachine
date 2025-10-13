@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { exec } from 'child_process';
-import cron from 'node-cron';
+import * as cron from 'node-cron';
 import fs from 'fs/promises';
 import path from 'path';
 
