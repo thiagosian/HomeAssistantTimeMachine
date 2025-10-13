@@ -3,7 +3,7 @@
   "version": "1.0.12",
   "slug": "homeassistant-time-machine",
   "description": "Browse and restore Home Assistant configuration backups.",
-  "url": "https://github.com/your-github-username/HomeAssistantTimeMachine",
+  "url": "https://github.com/saihgupr/HomeAssistantTimeMachine",
   "arch": ["amd64", "aarch64"],
   "startup": "application",
   "boot": "auto",
