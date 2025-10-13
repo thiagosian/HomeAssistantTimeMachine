@@ -66,8 +66,7 @@ cp "${liveFolderPath}"/*.yaml "${backupFolderPath}/$YEAR/$MONTH/$DATE"
   for (const id in jobs) {
     const { cronExpression, enabled, backupFolderPath, liveFolderPath } = jobs[id];
     if (enabled && backupFolderPath && liveFolderPath) {
-      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath), { scheduled: true });
-      console.log(`Rescheduled job ${id} with cron: ${cronExpression}, backupPath: ${backupFolderPath}, livePath: ${liveFolderPath}`);
+      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath), { scheduled: true } as any);
     }
   }
   console.log('Scheduled tasks initialization complete.');
