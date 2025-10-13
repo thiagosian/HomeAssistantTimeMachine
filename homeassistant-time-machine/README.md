@@ -2,6 +2,13 @@
 
 Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" for your Home Assistant configuration. It allows you to browse your existing file-based backups and restore individual automations and scripts to your live configuration.
 
+## Screenshots
+
+![Screenshot 1](https://i.imgur.com/ZThQc5r.png)
+![Screenshot 2](https://i.imgur.com/AUJdMKB.png)
+![Screenshot 3](https://i.imgur.com/c8qRHxA.png)
+![Screenshot 4](https://i.imgur.com/hZqJw04.png)
+
 ## Features
 
 *   **Browse Backups:** Easily browse through your existing Home Assistant backups.
