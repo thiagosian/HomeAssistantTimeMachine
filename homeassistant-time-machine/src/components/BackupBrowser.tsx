@@ -260,10 +260,15 @@ export default function BackupBrowser({ backupRootPath, liveConfigPath, onSaveCo
   const handleRestore = async (itemToRestore: Automation) => {
     try {
       const apiPath = mode === 'automations' ? '/api/restore-automation' : '/api/restore-script';
+      const body = {
+        liveConfigPath,
+        backupRootPath,
+        ...(mode === 'automations' ? { automationObject: itemToRestore } : { scriptObject: itemToRestore }),
+      };
       const response = await fetch(apiPath, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ liveConfigPath, automationObject: itemToRestore }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {

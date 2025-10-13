@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
@@ -12,23 +11,37 @@ interface Script {
 
 export async function POST(request: Request) {
   try {
-    const { liveConfigPath, automationObject } = await request.json();
+    const { liveConfigPath, backupRootPath, scriptObject } = await request.json();
 
-    if (!liveConfigPath || !automationObject) {
-      return NextResponse.json({ error: 'liveConfigPath and automationObject are required' }, { status: 400 });
+    if (!liveConfigPath || !scriptObject) {
+      return NextResponse.json({ error: 'liveConfigPath and scriptObject are required' }, { status: 400 });
     }
 
-    if (liveConfigPath.includes('..')) {
+    if (liveConfigPath.includes('..') || (backupRootPath && backupRootPath.includes('..'))) {
         return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
     }
 
     const scriptsPath = path.join(liveConfigPath, 'scripts.yaml');
-    const backupPath = `${scriptsPath}.${Date.now()}.bak`;
 
-    // 1. Create a backup of the current file
-    await fs.copyFile(scriptsPath, backupPath);
+    // 1. Create a backup in the backups folder
+    let backupPath: string | undefined;
+    if (backupRootPath) {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        const timestamp = `${year}-${month}-${day}-${hours}${minutes}${seconds}`;
 
-    // 2. Read the live automations file
+        const backupDir = path.join(backupRootPath, year.toString(), month, timestamp);
+        await fs.mkdir(backupDir, { recursive: true });
+        backupPath = path.join(backupDir, 'scripts.yaml');
+        await fs.copyFile(scriptsPath, backupPath);
+    }
+
+    // 2. Read the live scripts file
     const fileContent = await fs.readFile(scriptsPath, 'utf8');
     let scriptsObject = yaml.load(fileContent) as Record<string, Omit<Script, 'id'>>;
 
@@ -37,7 +50,7 @@ export async function POST(request: Request) {
         scriptsObject = {};
     }
 
-    const scriptToRestore: Script = { ...automationObject };
+    const scriptToRestore: Script = { ...scriptObject };
     const scriptId = scriptToRestore.id;
 
     if (!scriptId) {
@@ -59,6 +72,6 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     const err = error as Error;
     console.error(err);
-    return NextResponse.json({ error: 'Failed to restore automation.', details: err.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to restore script.', details: err.message }, { status: 500 });
   }
 }
