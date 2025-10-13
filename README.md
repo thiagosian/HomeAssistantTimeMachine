@@ -10,18 +10,26 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 *   **Safety First:** Automatically creates a backup of your current configuration file before restoring an item.
 *   **Reload Home Assistant:** Reload automations or scripts in Home Assistant directly from the UI after a restore.
 
-## How to Use
+## Installation
 
-1.  **Installation:** Add this repository as an addon repository in your Home Assistant Supervisor and install the "Home Assistant Time Machine" addon.
-2.  **Configuration:**
-    *   In the addon's configuration, set the port for the web interface.
-    *   Start the addon.
-    *   Open the web UI.
-3.  **In-App Setup:**
-    *   In the web UI, go to the settings.
-    *   Set the "Live Home Assistant Folder Path". This is the path to your Home Assistant configuration directory (e.g., `/config`).
-    *   Set the "Backup Folder Path". This is the path to the directory where your backups are stored.
-    *   Set the "Home Assistant URL" and "Long-Lived Access Token". These are needed for the feature that reloads Home Assistant after a restore.
+1.  Navigate to the Add-on store in your Home Assistant instance.
+2.  Click on the three dots in the top right corner and select "Repositories".
+3.  Paste the URL of this repository and click "Add":
+    ```
+    https://github.com/saihgupr/HomeAssistantTimeMachine
+    ```
+4.  The "Home Assistant Time Machine" addon will now appear in the store. Click on it and then click "Install".
+
+## Usage
+
+1.  **Configure the addon:** In the addon's configuration tab, set the port for the web interface.
+2.  **Start the addon.**
+3.  **Open the Web UI.**
+4.  **In-app setup:**
+    *   In the web UI, go to the settings menu.
+    *   **Live Home Assistant Folder Path:** Set the path to your Home Assistant configuration directory (e.g., `/config`).
+    *   **Backup Folder Path:** Set the path to the directory where your backups are stored.
+    *   **Home Assistant URL & Token:** Set the URL and a Long-Lived Access Token for your Home Assistant instance. This is needed for the feature that reloads Home Assistant after a restore.
 
 ## Configuration
 
@@ -30,9 +38,3 @@ The addon can be configured through the Home Assistant UI.
 *   **Web interface port:** The port on your host machine that will be mapped to the addon's web interface.
 
 All other configuration is done within the application's web UI.
-
-## Future Development
-
-*   More robust error handling and user notifications.
-*   Support for splitting automations and scripts into multiple files.
-*   Automated tests.
