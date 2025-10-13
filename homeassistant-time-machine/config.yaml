@@ -19,5 +19,4 @@
     "config:rw",
     "media:rw"
   ],
-  "icon": "mdi:clock"
 }
