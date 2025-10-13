@@ -6,8 +6,8 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 
 ![Screenshot 1](https://i.imgur.com/ZThQc5r.png)
 ![Screenshot 2](https://i.imgur.com/AUJdMKB.png)
-![Screenshot 3](https://i.imgur.com/c8qRHxA.png)
 ![Screenshot 4](https://i.imgur.com/hZqJw04.png)
+![Screenshot 3](https://i.imgur.com/c8qRHxA.png)
 
 ## Features
 
