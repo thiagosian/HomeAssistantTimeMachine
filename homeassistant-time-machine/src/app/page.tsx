@@ -27,12 +27,13 @@ export default function Home() {
     }
   }, []);
 
-  const handleSaveConfig = (config: { haUrl: string; haToken: string; backupFolderPath: string; liveFolderPath: string }) => {
-    localStorage.setItem('liveConfigPath', config.liveFolderPath);
-    localStorage.setItem('backupRootPath', config.backupFolderPath);
-    localStorage.setItem('haConfig', JSON.stringify({ haUrl: config.haUrl, haToken: config.haToken }));
-    setLiveConfigPath(config.liveFolderPath);
-    setBackupRootPath(config.backupFolderPath);
+  const handleSaveConfig = () => {
+    const haUrl = process.env.NEXT_PUBLIC_HA_URL || '';
+    const haToken = process.env.NEXT_PUBLIC_HA_TOKEN || '';
+
+    localStorage.setItem('liveConfigPath', liveConfigPath);
+    localStorage.setItem('backupRootPath', backupRootPath);
+    localStorage.setItem('haConfig', JSON.stringify({ haUrl, haToken }));
     setIsConfigSaved(true);
   };
 
