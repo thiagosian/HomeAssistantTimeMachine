@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
-  let haUrl: string;
-  let haToken: string;
-
-    haUrl = body.haUrl;
-    haToken = body.haToken;
-
-  if (!haUrl || !haToken) {
-    return NextResponse.json({ success: false, message: 'Home Assistant URL and Token are required.' }, { status: 400 });
-  }
-
   try {
+    const body = await req.json();
+    const { haUrl, haToken } = body;
+
+    if (!haUrl || !haToken) {
+      return NextResponse.json({ success: false, message: 'Home Assistant URL and Token are required.' }, { status: 400 });
+    }
+
     const response = await fetch(`${haUrl}/api/states`, {
       headers: {
         'Authorization': `Bearer ${haToken}`,

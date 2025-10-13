@@ -3,13 +3,8 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    let haUrl: string;
-    let haToken: string;
     const body = await request.json();
-    const { service } = body;
-
-    haUrl = body.haUrl;
-    haToken = body.haToken;
+    const { haUrl, haToken, service } = body;
 
     if (!haUrl || !haToken || !service) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
