@@ -50,12 +50,23 @@ export default function BackupBrowser({ backupRootPath, liveConfigPath, onSaveCo
 
   const [isConfigMenuOpen, setConfigMenuOpen] = useState(false);
   const [haConfig, setHaConfig] = useState<HaConfig | null>(null);
+  const [initialCronExpression, setInitialCronExpression] = useState('');
 
   useEffect(() => {
     const savedConfig = localStorage.getItem('haConfig');
     if (savedConfig) {
       setHaConfig(JSON.parse(savedConfig));
     }
+
+    // Fetch existing schedule
+    fetch('/api/schedule-backup')
+      .then(res => res.json())
+      .then(data => {
+        if (data.jobs && data.jobs['default-backup-job']) {
+          setInitialCronExpression(data.jobs['default-backup-job'].cronExpression);
+        }
+      })
+      .catch(error => console.error('Failed to fetch schedule:', error));
   }, []);
 
   useEffect(() => {
@@ -365,6 +376,7 @@ export default function BackupBrowser({ backupRootPath, liveConfigPath, onSaveCo
           initialBackupFolderPath={backupRootPath}
           initialLiveFolderPath={liveConfigPath}
           liveConfigPathError={liveConfigPathError}
+          initialCronExpression={initialCronExpression}
         />
       )}
 

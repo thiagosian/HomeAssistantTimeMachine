@@ -16,6 +16,7 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 *   **Restore Individual Items:** Restore individual automations or scripts without having to restore an entire backup.
 *   **Safety first:** It automatically creates a timestamped backup of your configuration file in your backups folder before restoring anything.
 *   **Reload Home Assistant:** Reload automations or scripts in Home Assistant directly from the UI after a restore.
+*   **Scheduled Backups:** Configure automatic backups of your Home Assistant configuration directly from the UI.
 
 ## Installation
 
@@ -37,12 +38,13 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
     *   **Live Home Assistant Folder Path:** Set the path to your Home Assistant configuration directory (e.g., `/config`).
     *   **Backup Folder Path:** Set the path to the directory where your backups are stored.
     *   **Home Assistant URL & Token:** Set the URL and a Long-Lived Access Token for your Home Assistant instance. This is needed for the feature that reloads Home Assistant after a restore.
+    *   **Enable Scheduled Backup:** Toggle this option to enable or disable automatic backups.
+    *   **Frequency:** Choose how often you want backups to run (e.g., Hourly, Daily, Weekly).
+    *   **Time:** If Daily or Weekly frequency is selected, specify the time of day for the backup to run.
 
 ## Creating Backups
 
-This addon relies on having file-based backups of your Home Assistant configuration. You need to set up a process to create these backups regularly.
-
-Here is an example of a simple shell script that you can use to create timestamped backups of your YAML files:
+This addon relies on having file-based backups of your Home Assistant configuration. You can now set up a scheduled backup directly within the UI. If you prefer to manage backups externally, here is an example of a simple shell script that you can use to create timestamped backups of your YAML files:
 
 ```bash
 #!/bin/bash
