@@ -295,9 +295,10 @@ export default function BackupBrowser({ backupRootPath, liveConfigPath, onSaveCo
     }
   };
 
-  const handleSaveConfig = (config: { haUrl: string; haToken: string; backupFolderPath: string; liveFolderPath: string }) => {
+  const handleSaveFromMenu = (config: { haUrl: string; haToken: string; backupFolderPath: string; liveFolderPath: string }) => {
     setHaConfig({ haUrl: config.haUrl, haToken: config.haToken });
     localStorage.setItem('haConfig', JSON.stringify({ haUrl: config.haUrl, haToken: config.haToken }));
+    onSaveConfig(config);
   };
 
   const formatTimestamp = (timestamp: number) => {
@@ -355,7 +356,7 @@ export default function BackupBrowser({ backupRootPath, liveConfigPath, onSaveCo
       {isConfigMenuOpen && (
         <ConfigMenu
           onClose={() => setConfigMenuOpen(false)}
-          onSave={onSaveConfig}
+          onSave={handleSaveFromMenu}
           initialBackupFolderPath={backupRootPath}
           initialLiveFolderPath={liveConfigPath}
           liveConfigPathError={liveConfigPathError}
