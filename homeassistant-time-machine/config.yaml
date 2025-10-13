@@ -18,8 +18,5 @@
   "map": [
     "config:rw",
     "media:rw"
-  ],
-  "ingress": true,
-  "ingress_port": 3000,
-  "panel_icon": "mdi:clock"
+  ]
 }
