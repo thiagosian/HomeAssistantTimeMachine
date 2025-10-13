@@ -479,7 +479,7 @@ export default function BackupBrowser({ backupRootPath, liveConfigPath, onSaveCo
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
                 style={{ 
-                  padding: '8px 40px 8px 16px',
+                  padding: '6px 40px 6px 16px',
                   backgroundColor: 'rgba(255, 255, 255, 0.05)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: '8px',

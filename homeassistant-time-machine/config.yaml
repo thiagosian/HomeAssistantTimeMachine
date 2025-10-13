@@ -1,6 +1,6 @@
 {
   "name": "Home Assistant Time Machine",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "slug": "homeassistant-time-machine",
   "description": "Browse and restore Home Assistant configuration backups.",
   "url": "https://github.com/your-github-username/HomeAssistantTimeMachine",
@@ -9,7 +9,7 @@
   "boot": "auto",
   "init": false,
   "ports": {
-    "3000/tcp": null
+    "3000/tcp": 3000
   },
   "ports_description": {
     "3000/tcp": "Web interface"
@@ -19,4 +19,5 @@
     "config:rw",
     "media:rw"
   ],
+  "icon": "mdi:clock"
 }
