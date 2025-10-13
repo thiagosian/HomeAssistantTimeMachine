@@ -8,13 +8,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { service } = body;
 
-    if (process.env.HA_URL && process.env.HA_TOKEN) {
-      haUrl = process.env.HA_URL;
-      haToken = process.env.HA_TOKEN;
-    } else {
-      haUrl = body.haUrl;
-      haToken = body.haToken;
-    }
+    haUrl = body.haUrl;
+    haToken = body.haToken;
 
     if (!haUrl || !haToken || !service) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });

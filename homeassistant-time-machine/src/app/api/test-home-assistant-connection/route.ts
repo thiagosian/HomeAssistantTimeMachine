@@ -4,14 +4,8 @@ export async function POST(req: NextRequest) {
   let haUrl: string;
   let haToken: string;
 
-  if (process.env.HA_URL && process.env.HA_TOKEN) {
-    haUrl = process.env.HA_URL;
-    haToken = process.env.HA_TOKEN;
-  } else {
-    const body = await req.json();
     haUrl = body.haUrl;
     haToken = body.haToken;
-  }
 
   if (!haUrl || !haToken) {
     return NextResponse.json({ success: false, message: 'Home Assistant URL and Token are required.' }, { status: 400 });
