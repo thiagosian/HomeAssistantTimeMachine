@@ -9,31 +9,18 @@ export default function Home() {
   const [isConfigSaved, setIsConfigSaved] = useState(false);
 
   useEffect(() => {
-    const envLivePath = process.env.NEXT_PUBLIC_LIVE_CONFIG_PATH;
-    const envBackupPath = process.env.NEXT_PUBLIC_BACKUP_FOLDER_PATH;
-
-    if (envLivePath && envBackupPath) {
-      setLiveConfigPath(envLivePath);
-      setBackupRootPath(envBackupPath);
+    const savedLivePath = localStorage.getItem('liveConfigPath');
+    const savedBackupPath = localStorage.getItem('backupRootPath');
+    if (savedLivePath && savedBackupPath) {
+      setLiveConfigPath(savedLivePath);
+      setBackupRootPath(savedBackupPath);
       setIsConfigSaved(true);
-    } else {
-      const savedLivePath = localStorage.getItem('liveConfigPath');
-      const savedBackupPath = localStorage.getItem('backupRootPath');
-      if (savedLivePath && savedBackupPath) {
-        setLiveConfigPath(savedLivePath);
-        setBackupRootPath(savedBackupPath);
-        setIsConfigSaved(true);
-      }
     }
   }, []);
 
   const handleSaveConfig = () => {
-    const haUrl = process.env.NEXT_PUBLIC_HA_URL || '';
-    const haToken = process.env.NEXT_PUBLIC_HA_TOKEN || '';
-
     localStorage.setItem('liveConfigPath', liveConfigPath);
     localStorage.setItem('backupRootPath', backupRootPath);
-    localStorage.setItem('haConfig', JSON.stringify({ haUrl, haToken }));
     setIsConfigSaved(true);
   };
 

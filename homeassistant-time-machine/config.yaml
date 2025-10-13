@@ -19,16 +19,4 @@
     "config:rw",
     "media:rw"
   ],
-  "options": {
-    "HA_URL": "http://homeassistant.local:8123",
-    "HA_TOKEN": "",
-    "BACKUP_FOLDER_PATH": "/media/backups/homeassistant-time-machine",
-    "LIVE_CONFIG_PATH": "/config"
-  },
-  "schema": {
-    "HA_URL": "str",
-    "HA_TOKEN": "str",
-    "BACKUP_FOLDER_PATH": "str",
-    "LIVE_CONFIG_PATH": "str"
-  }
 }
