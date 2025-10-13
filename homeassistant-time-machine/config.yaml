@@ -1,6 +1,6 @@
 {
   "name": "Home Assistant Time Machine",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "slug": "homeassistant-time-machine",
   "description": "Browse and restore Home Assistant configuration backups.",
   "url": "https://github.com/your-github-username/HomeAssistantTimeMachine",
