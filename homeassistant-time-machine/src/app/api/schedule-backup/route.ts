@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
     }
 
-    let jobs = await readScheduledJobs();
+    const jobs = await readScheduledJobs();
 
     if (enabled) {
       if (!cron.validate(cronExpression)) {
