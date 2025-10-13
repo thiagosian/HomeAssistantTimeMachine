@@ -1,4 +1,4 @@
-# Home Assistant Time Machine!
+# Home Assistant Time Machine
 
 This is a web-based tool built with Next.js and React that serves as a "Time Machine" for Home Assistant automations. It allows a user to browse their existing file-based backups and restore individual automations into their live configuration.
 
