@@ -94,7 +94,7 @@ export async function POST(request: Request) {
         console.log(`Destroyed existing task for job ID: ${id}`);
       }
 
-      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath), { scheduled: true });
+      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath));
       jobs[id] = { cronExpression, enabled: true, backupFolderPath, liveFolderPath };
       console.log(`Scheduled job ${id} with cron: ${cronExpression}, backupPath: ${backupFolderPath}, livePath: ${liveFolderPath}`);
     } else {
