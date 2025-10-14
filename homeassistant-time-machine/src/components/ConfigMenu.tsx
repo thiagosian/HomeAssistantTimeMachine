@@ -258,15 +258,6 @@ export default function ConfigMenu({ onClose, onSave, initialBackupFolderPath, i
                       WebkitAppearance: 'none', /* Safari and Chrome */
                       MozAppearance: 'none',    /* Firefox */
                       appearance: 'none',       /* Standard */
-                      '&::-webkit-calendar-picker-indicator': { 
-                        opacity: 0, 
-                        pointerEvents: 'none', 
-                        width: '100%', 
-                        height: '100%', 
-                        position: 'absolute', 
-                        top: 0, 
-                        left: 0 
-                      },
                       '&::-webkit-inner-spin-button': { display: 'none' }, /* Hide up/down arrows */
                       '&::-webkit-outer-spin-button': { display: 'none' } /* Hide up/down arrows */
                     }}
