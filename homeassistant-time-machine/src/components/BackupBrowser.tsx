@@ -271,10 +271,12 @@ export default function BackupBrowser({ backupRootPath, liveConfigPath, onSaveCo
   const handleRestore = async (itemToRestore: Automation) => {
     try {
       const apiPath = mode === 'automations' ? '/api/restore-automation' : '/api/restore-script';
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const body = {
         liveConfigPath,
         backupRootPath,
         ...(mode === 'automations' ? { automationObject: itemToRestore } : { scriptObject: itemToRestore }),
+        timezone,
       };
       const response = await fetch(apiPath, {
         method: 'POST',
