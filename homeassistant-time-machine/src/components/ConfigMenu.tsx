@@ -13,8 +13,8 @@ interface ConfigMenuProps {
 export default function ConfigMenu({ onClose, onSave, initialBackupFolderPath, initialLiveFolderPath, liveConfigPathError }: ConfigMenuProps) {
   const [haUrl, setHaUrl] = useState('');
   const [haToken, setHaToken] = useState('');
-  const [backupFolderPath, setBackupFolderPath] = useState(initialBackupFolderPath);
-  const [liveFolderPath, setLiveFolderPath] = useState(initialLiveFolderPath);
+  const [backupFolderPath, setBackupFolderPath] = useState(initialBackupFolderPath || '/media/backups/yaml');
+  const [liveFolderPath, setLiveFolderPath] = useState(initialLiveFolderPath || '/config');
   const [scheduleEnabled, setScheduleEnabled] = useState(false);
   const [scheduleFrequency, setScheduleFrequency] = useState('daily'); // 'hourly', 'daily', 'weekly'
   const [scheduleTime, setScheduleTime] = useState('00:00'); // HH:MM format
@@ -180,7 +180,6 @@ export default function ConfigMenu({ onClose, onSave, initialBackupFolderPath, i
             type="text"
             value={backupFolderPath}
             onChange={(e) => setBackupFolderPath(e.target.value)}
-            placeholder="/path/to/backups"
             style={{ width: '100%', padding: '12px', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', color: 'white', fontSize: '14px' }}
           />
         </div>
