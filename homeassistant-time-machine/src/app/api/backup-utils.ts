@@ -32,13 +32,11 @@ export async function createBackup(liveConfigPath: string, backupRootPath: strin
     const files = await fs.readdir(liveConfigPath);
     const yamlFiles = files.filter(file => file.endsWith('.yaml'));
 
-    const backupPaths = [];
     for (const file of yamlFiles) {
         const sourcePath = path.join(liveConfigPath, file);
         const destinationPath = path.join(backupDir, file);
         await fs.copyFile(sourcePath, destinationPath);
-        backupPaths.push(destinationPath);
     }
 
-    return { backupPaths };
+    return { backupDir };
 }

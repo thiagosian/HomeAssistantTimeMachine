@@ -28,8 +28,8 @@ export async function POST(request: Request) {
     // 1. Create a backup in the backups folder
     let backupPath: string | undefined;
     if (backupRootPath) {
-        const { scriptBackupPath } = await createBackup(liveConfigPath, backupRootPath, timezone);
-        backupPath = scriptBackupPath;
+        const { backupDir } = await createBackup(liveConfigPath, backupRootPath, timezone);
+        backupPath = backupDir;
     }
 
     // 2. Read the live scripts file
