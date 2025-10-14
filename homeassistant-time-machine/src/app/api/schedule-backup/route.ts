@@ -43,6 +43,12 @@ function runBackupScript(backupFolderPath: string, liveFolderPath: string, timez
 // Initialize scheduled tasks on server start
 (async () => {
   console.log('Initializing scheduled tasks...');
+
+  // Simple test cron job to log every minute
+  cron.schedule('* * * * *', () => {
+    console.log('Simple cron job running every minute.');
+  });
+
   const jobs = await readScheduledJobs();
   for (const id in jobs) {
     const { cronExpression, enabled, backupFolderPath, liveFolderPath, timezone } = jobs[id];
