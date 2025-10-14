@@ -62,7 +62,7 @@ function runBackupScript(backupFolderPath: string, liveFolderPath: string, timez
   for (const id in jobs) {
     const { cronExpression, enabled, backupFolderPath, liveFolderPath, timezone } = jobs[id];
     if (enabled && backupFolderPath && liveFolderPath) {
-      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath, timezone || 'UTC'));
+      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath, timezone || 'UTC'), { timezone: timezone || 'UTC' });
     }
   }
   console.log('Scheduled tasks initialization complete.');
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         console.log(`Destroyed existing task for job ID: ${id}`);
       }
 
-      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath, timezone || 'UTC'));
+      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath, timezone || 'UTC'), { timezone: timezone || 'UTC' });
       jobs[id] = { cronExpression, enabled: true, backupFolderPath, liveFolderPath, timezone };
       console.log(`Scheduled job ${id} with cron: ${cronExpression}, backupPath: ${backupFolderPath}, livePath: ${liveFolderPath}, timezone: ${timezone}`);
     } else {
