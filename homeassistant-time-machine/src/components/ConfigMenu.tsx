@@ -7,6 +7,7 @@ interface ConfigMenuProps {
   initialBackupFolderPath: string;
   initialLiveFolderPath: string;
   liveConfigPathError: string | null;
+  initialCronExpression: string;
 }
 
 export default function ConfigMenu({ onClose, onSave, initialBackupFolderPath, initialLiveFolderPath, liveConfigPathError }: ConfigMenuProps) {
