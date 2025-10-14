@@ -5,7 +5,7 @@ import * as cron from 'node-cron';
 import fs from 'fs/promises';
 import path from 'path';
 
-const SCHEDULE_FILE = path.resolve(process.cwd(), 'scheduled-jobs.json');
+const SCHEDULE_FILE = path.resolve('/data', 'scheduled-jobs.json');
 
 // Function to read scheduled jobs from file
 async function readScheduledJobs() {

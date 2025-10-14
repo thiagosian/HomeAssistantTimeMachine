@@ -1,6 +1,6 @@
 {
   "default-backup-job": {
-    "cronExpression": "35 19 * * *",
+    "cronExpression": "30 7 * * *",
     "enabled": true,
     "backupFolderPath": "/Volumes/media-1/backups/yaml",
     "liveFolderPath": "/Volumes/config-1"
