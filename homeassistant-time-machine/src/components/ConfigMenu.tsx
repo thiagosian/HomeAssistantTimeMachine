@@ -234,7 +234,21 @@ export default function ConfigMenu({ onClose, onSave, initialBackupFolderPath, i
                   id="scheduleFrequency"
                   value={scheduleFrequency}
                   onChange={(e) => setScheduleFrequency(e.target.value)}
-                  style={{ width: '100%', padding: '12px', backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', color: 'white', fontSize: '14px' }}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    color: 'white',
+                    fontSize: '14px',
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'none',
+                    appearance: 'none',
+                    backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%239ca3af" viewBox="0 0 20 20"><path d="M10 12l-6-6h12l-6 6z"/></svg>')`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 12px center',
+                  }}
                 >
                   <option value="hourly">Hourly</option>
                   <option value="daily">Daily</option>
