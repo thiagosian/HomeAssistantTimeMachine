@@ -88,6 +88,7 @@ export default function ConfigMenu({ onClose, onSave, initialBackupFolderPath, i
     // Save schedule configuration
     try {
       const cronExpression = scheduleToCron(scheduleFrequency, scheduleTime);
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       await fetch('/api/schedule-backup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -97,6 +98,7 @@ export default function ConfigMenu({ onClose, onSave, initialBackupFolderPath, i
           cronExpression: cronExpression,
           backupFolderPath: backupFolderPath,
           liveFolderPath: liveFolderPath,
+          timezone: timezone,
         }),
       });
     } catch (error) {
