@@ -34,6 +34,7 @@ const scheduledTasks: { [key: string]: cron.ScheduledTask } = {};
 
 // Function to execute the backup script
 function runBackupScript(backupFolderPath: string, liveFolderPath: string, timezone: string) {
+  console.log('runBackupScript called with:', { backupFolderPath, liveFolderPath, timezone });
   console.log('Attempting to run backup script...');
   createBackup(liveFolderPath, backupFolderPath, timezone)
     .then(() => console.log('Backup script finished.'))
