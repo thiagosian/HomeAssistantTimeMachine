@@ -1,9 +1,8 @@
-
 import { NextResponse } from 'next/server';
-import { exec } from 'child_process';
 import * as cron from 'node-cron';
 import fs from 'fs/promises';
 import path from 'path';
+import { createBackup } from '../backup-utils';
 
 const SCHEDULE_FILE = path.resolve('/data', 'scheduled-jobs.json');
 
@@ -34,29 +33,11 @@ async function writeScheduledJobs(jobs: object) {
 const scheduledTasks: { [key: string]: cron.ScheduledTask } = {};
 
 // Function to execute the backup script
-function runBackupScript(backupFolderPath: string, liveFolderPath: string) {
+function runBackupScript(backupFolderPath: string, liveFolderPath: string, timezone: string) {
   console.log('Attempting to run backup script...');
-  const script = `#!/bin/bash
-
-DATE=$(date +%Y-%m-%d-%H%M%S)
-YEAR=$(date +%Y)
-MONTH=$(date +%m)
-
-### HOME ASSISTANT ###
-mkdir -p  "${backupFolderPath}/$YEAR/$MONTH/$DATE"
-cp "${liveFolderPath}"/*.yaml "${backupFolderPath}/$YEAR/$MONTH/$DATE"
-`;
-
-  console.log('Executing bash script:', script);
-  exec(script, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`exec error: ${error}`);
-      return;
-    }
-    console.log(`stdout: ${stdout}`);
-    console.error(`stderr: ${stderr}`);
-    console.log('Backup script finished.');
-  });
+  createBackup(liveFolderPath, backupFolderPath, timezone)
+    .then(() => console.log('Backup script finished.'))
+    .catch(error => console.error(`exec error: ${error}`));
 }
 
 // Initialize scheduled tasks on server start
@@ -64,9 +45,9 @@ cp "${liveFolderPath}"/*.yaml "${backupFolderPath}/$YEAR/$MONTH/$DATE"
   console.log('Initializing scheduled tasks...');
   const jobs = await readScheduledJobs();
   for (const id in jobs) {
-    const { cronExpression, enabled, backupFolderPath, liveFolderPath } = jobs[id];
+    const { cronExpression, enabled, backupFolderPath, liveFolderPath, timezone } = jobs[id];
     if (enabled && backupFolderPath && liveFolderPath) {
-      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath));
+      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath, timezone || 'UTC'));
     }
   }
   console.log('Scheduled tasks initialization complete.');
@@ -75,7 +56,7 @@ cp "${liveFolderPath}"/*.yaml "${backupFolderPath}/$YEAR/$MONTH/$DATE"
 
 export async function POST(request: Request) {
   try {
-    const { cronExpression, enabled, id, backupFolderPath, liveFolderPath } = await request.json();
+    const { cronExpression, enabled, id, backupFolderPath, liveFolderPath, timezone } = await request.json();
 
     if (!id) {
       return NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
@@ -94,9 +75,9 @@ export async function POST(request: Request) {
         console.log(`Destroyed existing task for job ID: ${id}`);
       }
 
-      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath));
-      jobs[id] = { cronExpression, enabled: true, backupFolderPath, liveFolderPath };
-      console.log(`Scheduled job ${id} with cron: ${cronExpression}, backupPath: ${backupFolderPath}, livePath: ${liveFolderPath}`);
+      scheduledTasks[id] = cron.schedule(cronExpression, () => runBackupScript(backupFolderPath, liveFolderPath, timezone || 'UTC'));
+      jobs[id] = { cronExpression, enabled: true, backupFolderPath, liveFolderPath, timezone };
+      console.log(`Scheduled job ${id} with cron: ${cronExpression}, backupPath: ${backupFolderPath}, livePath: ${liveFolderPath}, timezone: ${timezone}`);
     } else {
       // If disabling, destroy the cron task
       if (scheduledTasks[id]) {

@@ -9,6 +9,8 @@ interface Script {
     sequence: any[];
 }
 
+import { createBackup } from '../backup-utils';
+
 export async function POST(request: Request) {
   try {
     const { liveConfigPath, backupRootPath, scriptObject, timezone } = await request.json();
@@ -26,34 +28,8 @@ export async function POST(request: Request) {
     // 1. Create a backup in the backups folder
     let backupPath: string | undefined;
     if (backupRootPath) {
-        const date = new Date();
-        const options: Intl.DateTimeFormatOptions = {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false,
-            timeZone: timezone
-        };
-        const formatter = new Intl.DateTimeFormat('en-US', options);
-        const parts = formatter.formatToParts(date);
-        const getPart = (type: string) => parts.find(p => p.type === type)?.value || '';
-        
-        const year = getPart('year');
-        const month = getPart('month');
-        const day = getPart('day');
-        const hours = getPart('hour');
-        const minutes = getPart('minute');
-        const seconds = getPart('second');
-
-        const timestamp = `${year}-${month}-${day}-${hours}${minutes}${seconds}`;
-
-        const backupDir = path.join(backupRootPath, year.toString(), month, timestamp);
-        await fs.mkdir(backupDir, { recursive: true });
-        backupPath = path.join(backupDir, 'scripts.yaml');
-        await fs.copyFile(scriptsPath, backupPath);
+        const { scriptBackupPath } = await createBackup(liveConfigPath, backupRootPath, timezone);
+        backupPath = scriptBackupPath;
     }
 
     // 2. Read the live scripts file
