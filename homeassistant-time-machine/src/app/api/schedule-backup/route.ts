@@ -47,7 +47,6 @@ function runBackupScript(backupFolderPath: string, liveFolderPath: string, timez
 
   // Simple test cron job to log every minute
   cron.schedule('* * * * *', async () => {
-    console.log(`Simple cron job running every minute. Current time: ${new Date().toISOString()}`);
     // The original search string contained logic for reading scheduled jobs and manually checking cron expressions (parseExpression, next, now).
     // This logic is not present in the file's existing cron.schedule block, as node-cron handles scheduling directly.
     // To fulfill the instruction's intent of logging 'next' and 'now' for debugging scheduling logic, and given the file's structure,
