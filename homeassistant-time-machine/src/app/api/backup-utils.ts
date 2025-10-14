@@ -2,9 +2,6 @@ import fs from 'fs/promises';
 import path from 'path';
 
 export async function createBackup(liveConfigPath: string, backupRootPath: string, timezone: string) {
-    const automationsPath = path.join(liveConfigPath, 'automations.yaml');
-    const scriptsPath = path.join(liveConfigPath, 'scripts.yaml');
-
     const date = new Date();
     const options: Intl.DateTimeFormatOptions = {
         year: 'numeric',
@@ -32,11 +29,16 @@ export async function createBackup(liveConfigPath: string, backupRootPath: strin
     const backupDir = path.join(backupRootPath, year.toString(), month, timestamp);
     await fs.mkdir(backupDir, { recursive: true });
 
-    const automationBackupPath = path.join(backupDir, 'automations.yaml');
-    await fs.copyFile(automationsPath, automationBackupPath);
+    const files = await fs.readdir(liveConfigPath);
+    const yamlFiles = files.filter(file => file.endsWith('.yaml'));
 
-    const scriptBackupPath = path.join(backupDir, 'scripts.yaml');
-    await fs.copyFile(scriptsPath, scriptBackupPath);
+    const backupPaths = [];
+    for (const file of yamlFiles) {
+        const sourcePath = path.join(liveConfigPath, file);
+        const destinationPath = path.join(backupDir, file);
+        await fs.copyFile(sourcePath, destinationPath);
+        backupPaths.push(destinationPath);
+    }
 
-    return { automationBackupPath, scriptBackupPath };
+    return { backupPaths };
 }
