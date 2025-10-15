@@ -32,7 +32,7 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 
 1.  **Configure the addon:** In the addon's configuration tab, set the port for the web interface.
 2.  **Start the addon.**
-3.  **Open the Web UI.**
+3.  **Open the Web UI or in a browser http://homeassistant.local:3000.**
 4.  **In-app setup:**
     *   In the web UI, go to the settings menu.
     *   **Live Home Assistant Folder Path:** Set the path to your Home Assistant configuration directory (e.g., `/config`).
