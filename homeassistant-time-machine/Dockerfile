@@ -27,8 +27,8 @@ FROM $BUILD_FROM
 
 ARG BUILD_ARCH
 
-# Install Node.js
-RUN apk add --no-cache nodejs
+# Install Node.js and npm
+RUN apk add --no-cache nodejs npm
 
 WORKDIR /app
 
