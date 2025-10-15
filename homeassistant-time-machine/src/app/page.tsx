@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import BackupBrowser from '@/components/BackupBrowser';
+import Image from 'next/image';
 
 export default function Home() {
   const [liveConfigPath, setLiveConfigPath] = useState('');
@@ -30,11 +31,7 @@ export default function Home() {
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ width: '48px', height: '48px', background: 'linear-gradient(to bottom right, #3b82f6, #2563eb)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)' }}>
-              <svg style={{ width: '28px', height: '28px', color: 'white' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
+            <Image src="/icon.png" alt="Home Assistant Time Machine" width={48} height={48} />
             <div>
               <h1 style={{ fontSize: '24px', fontWeight: '600', color: 'white', marginBottom: '4px' }}>Home Assistant Time Machine</h1>
               <p style={{ fontSize: '14px', color: '#9ca3af' }}>Browse and restore backups</p>
