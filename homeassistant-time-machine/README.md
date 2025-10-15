@@ -4,10 +4,10 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 
 ## Screenshots
 
-![Screenshot 1](https://i.imgur.com/ZThQc5r.png)
-![Screenshot 2](https://i.imgur.com/AUJdMKB.png)
-![Screenshot 4](https://i.imgur.com/hZqJw04.png)
-![Screenshot 3](https://i.imgur.com/UdgcMsz.png)
+![Screenshot 1](https://i.imgur.com/tckqmy8.png)
+![Screenshot 2](https://i.imgur.com/KOqjUYD.png)
+![Screenshot 4](https://i.imgur.com/GWWwkht.png)
+![Screenshot 3](https://i.imgur.com/LbjZobV.png)
 
 ## Features
 
@@ -32,7 +32,7 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 
 1.  **Configure the addon:** In the addon's configuration tab, set the port for the web interface.
 2.  **Start the addon.**
-3.  **Open the Web UI.**
+3.  **Open the Web UI or in a browser http://homeassistant.local:3000.**
 4.  **In-app setup:**
     *   In the web UI, go to the settings menu.
     *   **Live Home Assistant Folder Path:** Set the path to your Home Assistant configuration directory (e.g., `/config`).
