@@ -4,38 +4,42 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Install all dependencies
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install --legacy-peer-deps
 
-# Copy all application files
+# Copy the rest of the application files
 COPY . .
 
-# Build Next.js application
+# Build the application
 RUN npm run build
 
-# Remove development dependencies
-RUN npm prune --production
+# Stage 2: Production dependencies
+FROM node:20-alpine AS production-deps
 
-# Stage 2: Create the final image
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --omit=dev --legacy-peer-deps
+
+# Stage 3: Create the final image
 FROM $BUILD_FROM
+
+ARG BUILD_ARCH
 
 # Install Node.js
 RUN apk add --no-cache nodejs
 
 WORKDIR /app
 
-# Copy built application from the builder stage
+# Copy built application and production dependencies
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=production-deps /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/run.sh ./run.sh
 COPY --from=builder /app/scheduled-jobs.json ./scheduled-jobs.json
-
 
 # Expose the port Next.js runs on
 EXPOSE 3000
