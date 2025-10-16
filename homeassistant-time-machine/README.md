@@ -11,7 +11,7 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 
 ## Features
 
-*   **Browse Backups:** Easily browse through your existing Home Assistant backups.
+*   **Browse Backups:** Easily browse through your Home Assistant backup yaml files.
 *   **View Changes:** See a side-by-side diff of the changes between a backed-up item and the live version.
 *   **Restore Individual Items:** Restore individual automations or scripts without having to restore an entire backup.
 *   **Safety first:** It automatically creates a backup of your yaml files in your backups folder before restoring anything.
@@ -20,6 +20,10 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 
 ## Installation
 
+There are two ways to install Home Assistant Time Machine: as a Home Assistant Add-on or as a standalone Docker container.
+
+### 1. Home Assistant Add-on (Recommended for most users)
+
 1.  Navigate to the Add-on store in your Home Assistant instance.
 2.  Click on the three dots in the top right corner and select "Repositories".
 3.  Paste the URL of this repository and click "Add":
@@ -27,6 +31,42 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
     https://github.com/saihgupr/HomeAssistantTimeMachine
     ```
 4.  The "Home Assistant Time Machine" addon will now appear in the store. Click on it and then click "Install".
+
+### 2. Standalone Docker Installation
+
+This method is for users who do not have the Home Assistant Add-on store or prefer to manage their own Docker containers.
+
+#### Building the image from source
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/saihgupr/HomeAssistantTimeMachine.git
+    cd HomeAssistantTimeMachine/homeassistant-time-machine
+    ```
+
+2.  **Build the Docker image:**
+    ```bash
+    docker build --build-arg BUILD_FROM=node:20-alpine -t ha-time-machine .
+    ```
+
+### Running the Container
+
+Once you have the image, run it with this command:
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -v /path/to/your/ha/config:/config \
+  -v /path/to/your/backups:/backups \
+  --name ha-time-machine \
+  ha-time-machine
+```
+
+**Important:**
+*   Replace `/path/to/your/ha/config` with the absolute path to your Home Assistant configuration directory.
+*   Replace `/path/to/your/backups` with the absolute path to your backup directory.
+
+After running the container, proceed to the "Usage" section to configure the application through its web UI at `http://localhost:3000`.
 
 ## Usage
 
