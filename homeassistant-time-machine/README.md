@@ -76,7 +76,7 @@ After running the container, proceed to the "Usage" section to configure the app
 4.  **In-app setup:**
     *   In the web UI, go to the settings menu.
     *   **Live Home Assistant Folder Path:** Set the path to your Home Assistant configuration directory (e.g., `/config`).
-    *   **Backup Folder Path:** Set the path to the directory where your backups are stored.
+    *   **Backup Folder Path:** Set the path to the directory where your backups are stored (e.g., `/media/backups/yaml`).
     *   **Home Assistant URL & Token:** Set the URL and a Long-Lived Access Token for your Home Assistant instance. This is needed for the feature that reloads Home Assistant after a restore.
     *   **Enable Scheduled Backup:** Toggle this option to enable or disable automatic backups.
     *   **Frequency:** Choose how often you want backups to run (e.g., Hourly, Daily, Weekly).
