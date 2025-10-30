@@ -104,7 +104,10 @@
 }
 
 .folder-icon {
-  gap: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: -18px;
 }
 
 .folder-chevron {
@@ -112,8 +115,7 @@
   height: 12px;
   color: var(--text-secondary);
   transition: transform 0.2s ease;
-  position: absolute;
-  left: -2px;
+  flex-shrink: 0;
 }
 
 .file-tree-item.expanded > div > .folder-icon > .folder-chevron {

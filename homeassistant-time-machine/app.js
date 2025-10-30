@@ -157,7 +157,7 @@ app.get('/', async (req, res) => {
     res.render('index', {
       title: 'Home Assistant Time Machine',
       version,
-      currentMode: 'automations',
+      currentMode: 'files',
       esphomeEnabled,
       packagesEnabled
     });
@@ -166,7 +166,7 @@ app.get('/', async (req, res) => {
     res.render('index', {
       title: 'Home Assistant Time Machine',
       version,
-      currentMode: 'automations',
+      currentMode: 'files',
       esphomeEnabled: false,
       packagesEnabled: false
     });
