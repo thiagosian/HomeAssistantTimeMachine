@@ -1,6 +1,6 @@
 {
   "name": "home-assistant-time-machine",
-  "version": "1.9.9",
+  "version": "2.0.0",
   "description": "Browse and restore Home Assistant configuration backups",
   "private": true,
   "scripts": {
