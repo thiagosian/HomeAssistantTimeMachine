@@ -280,3 +280,69 @@ export function FoodSearchCombobox({
     );
   }
   ```
+
+---
+
+## 📊 Relatório de Execução
+
+**Data:** 2025-10-30
+
+### Tarefas Realizadas
+
+✅ **Componente FoodSearchCombobox Implementado**
+- Arquivo criado: `frontend/components/nutrition/FoodSearchCombobox.tsx`
+- Implementação completa com todas as funcionalidades especificadas:
+  - Componente controlado (value/onChange)
+  - Debounce de 300ms via hook `useDebouncedValue`
+  - Integração com tRPC `foods.search`
+  - Componentes shadcn/ui (Command, Popover, Button)
+  - Loading, empty e default states implementados
+  - Exibição de nome, categoria e macros (P/C/F) para cada alimento
+  - Estilização com cores do design system (cyan/yellow/red para macros)
+  - Type `FoodOption` exportado para reuso
+
+✅ **Componente command do shadcn/ui Instalado**
+- Dependência necessária adicionada via `npx shadcn@latest add command`
+
+✅ **Página de Teste Criada**
+- Arquivo: `frontend/app/test-components/page.tsx`
+- Demonstra uso básico do componente com estado local
+- Exibe JSON do alimento selecionado
+
+✅ **Correção em Página Existente**
+- Arquivo: `frontend/app/planos/page.tsx`
+- Atualizado para usar props corretas (`onChange` em vez de `onSelect`)
+
+✅ **Validação**
+- **Lint:** ✅ Passou sem erros (`npm run lint`)
+- **Dev Server:** ✅ Funcionando corretamente na porta 3000
+- **tRPC Runtime:** ✅ Query `foods.search` executando com sucesso
+
+### Observações Técnicas
+
+**Problema Identificado (Pré-existente):**
+- Erros de TypeScript no build relacionados a inferência de tipos do tRPC com Next.js 16
+- Não bloqueiam funcionamento em desenvolvimento/runtime
+- Afetam múltiplas páginas (atividade, recovery, sono, peso, tendencias, page)
+- Não relacionados ao componente FoodSearchCombobox implementado
+
+**Arquivos Criados/Modificados:**
+1. `frontend/components/nutrition/FoodSearchCombobox.tsx` (194 linhas)
+2. `frontend/app/test-components/page.tsx` (15 linhas)
+3. `frontend/app/planos/page.tsx` (correção de props)
+4. `frontend/components/ui/command.tsx` (instalado via shadcn)
+
+### Status Final
+
+✅ **Todos os critérios de aceitação atendidos:**
+- [x] Arquivo criado
+- [x] Componente controlado
+- [x] Debounce implementado
+- [x] Query tRPC configurada corretamente
+- [x] Loading state
+- [x] Empty state
+- [x] Exibição completa de dados do alimento
+- [x] Seleção fecha popover e limpa busca
+- [x] Estilos consistentes com design system
+- [x] Compilação TypeScript sem erros no componente
+- [x] Página de teste funcional
