@@ -2022,11 +2022,36 @@ app.post('/api/backup-now', async (req, res) => {
 app.post('/api/get-backup-lovelace', async (req, res) => {
   try {
     const { backupPath } = req.body;
-    const lovelaceDir = path.join(backupPath, '.storage');
-    
-    const files = await fs.readdir(lovelaceDir);
-    const lovelaceFiles = files.filter(f => f.startsWith('lovelace'));
-    
+
+    // Check if Git mode is enabled
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    let lovelaceFiles = [];
+
+    if (backupMode === 'git') {
+      // In Git mode, backupPath is actually a commit hash
+      const commitHash = backupPath;
+      console.log(`[get-backup-lovelace] Reading from Git commit: ${commitHash}`);
+
+      if (!gitManager) {
+        return res.status(500).json({ error: 'Git manager not initialized' });
+      }
+
+      // Get all files in the commit
+      const allFiles = await gitManager.getFilesInCommit(commitHash);
+
+      // Filter for lovelace files in .storage
+      lovelaceFiles = allFiles
+        .filter(f => f.startsWith('.storage/lovelace'))
+        .map(f => path.basename(f));
+    } else {
+      // Folder mode: Read from file system
+      const lovelaceDir = path.join(backupPath, '.storage');
+      const files = await fs.readdir(lovelaceDir);
+      lovelaceFiles = files.filter(f => f.startsWith('lovelace'));
+    }
+
     res.json({ lovelaceFiles });
   } catch (error) {
     console.error('[get-backup-lovelace] Error:', error);
@@ -2037,16 +2062,38 @@ app.post('/api/get-backup-lovelace', async (req, res) => {
 app.post('/api/get-backup-lovelace-file', async (req, res) => {
   try {
     const { backupPath, fileName } = req.body;
-    const filePath = path.join(backupPath, '.storage', fileName);
-    
+
     console.log(`[get-backup-lovelace-file] Request for file: ${fileName} in backup: ${backupPath}`);
-    
-    res.sendFile(filePath, (err) => {
-      if (err) {
-        console.error('[get-backup-lovelace-file] Error sending file:', err);
-        res.status(err.status || 500).json({ error: err.message });
+
+    // Check if Git mode is enabled
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    if (backupMode === 'git') {
+      // In Git mode, backupPath is actually a commit hash
+      const commitHash = backupPath;
+      console.log(`[get-backup-lovelace-file] Reading from Git commit: ${commitHash}`);
+
+      if (!gitManager) {
+        return res.status(500).json({ error: 'Git manager not initialized' });
       }
-    });
+
+      // Use git show to read file content from commit
+      const content = await gitManager.git.show([`${commitHash}:.storage/${fileName}`]);
+
+      // Send as JSON response
+      res.setHeader('Content-Type', 'application/json');
+      res.send(content);
+    } else {
+      // Folder mode: Send file from file system
+      const filePath = path.join(backupPath, '.storage', fileName);
+      res.sendFile(filePath, (err) => {
+        if (err) {
+          console.error('[get-backup-lovelace-file] Error sending file:', err);
+          res.status(err.status || 500).json({ error: err.message });
+        }
+      });
+    }
   } catch (error) {
     console.error('[get-backup-lovelace-file] Error:', error);
     res.status(500).json({ error: error.message });
@@ -2103,13 +2150,31 @@ app.post('/api/restore-lovelace-file', async (req, res) => {
     await fs.mkdir(path.dirname(targetFilePath), { recursive: true });
 
     if (backupPath) {
-      const sourceFilePath = path.join(backupPath, '.storage', fileName);
-      try {
-        await fs.copyFile(sourceFilePath, targetFilePath);
-      } catch (copyError) {
-        console.error('[restore-lovelace-file] Copy from backup failed, falling back to write:', copyError.message);
-        const backupContent = await fs.readFile(sourceFilePath, 'utf-8');
+      // Check if Git mode is enabled
+      const settings = await loadDockerSettings();
+      const backupMode = settings.backupMode || 'folder';
+
+      if (backupMode === 'git') {
+        // In Git mode, restore from commit
+        const commitHash = backupPath;
+        console.log(`[restore-lovelace-file] Restoring from Git commit: ${commitHash}`);
+
+        if (!gitManager) {
+          return res.status(500).json({ error: 'Git manager not initialized' });
+        }
+
+        const backupContent = await gitManager.git.show([`${commitHash}:.storage/${fileName}`]);
         await fs.writeFile(targetFilePath, backupContent, 'utf-8');
+      } else {
+        // Folder mode: Copy from file system
+        const sourceFilePath = path.join(backupPath, '.storage', fileName);
+        try {
+          await fs.copyFile(sourceFilePath, targetFilePath);
+        } catch (copyError) {
+          console.error('[restore-lovelace-file] Copy from backup failed, falling back to write:', copyError.message);
+          const backupContent = await fs.readFile(sourceFilePath, 'utf-8');
+          await fs.writeFile(targetFilePath, backupContent, 'utf-8');
+        }
       }
     } else {
       const contentToWrite = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
@@ -2134,8 +2199,35 @@ app.post('/api/get-backup-esphome', async (req, res) => {
       return res.status(404).json({ error: 'ESPHome feature disabled' });
     }
     const { backupPath } = req.body;
-    const esphomeDir = path.join(backupPath, 'esphome');
-    const esphomeFiles = await listYamlFilesRecursive(esphomeDir);
+
+    // Check if Git mode is enabled
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    let esphomeFiles = [];
+
+    if (backupMode === 'git') {
+      // In Git mode, backupPath is actually a commit hash
+      const commitHash = backupPath;
+      console.log(`[get-backup-esphome] Reading from Git commit: ${commitHash}`);
+
+      if (!gitManager) {
+        return res.status(500).json({ error: 'Git manager not initialized' });
+      }
+
+      // Get all files in the commit
+      const allFiles = await gitManager.getFilesInCommit(commitHash);
+
+      // Filter for esphome YAML files
+      esphomeFiles = allFiles
+        .filter(f => f.startsWith('esphome/') && (f.endsWith('.yaml') || f.endsWith('.yml')))
+        .map(f => f.replace('esphome/', ''));
+    } else {
+      // Folder mode: Read from file system
+      const esphomeDir = path.join(backupPath, 'esphome');
+      esphomeFiles = await listYamlFilesRecursive(esphomeDir);
+    }
+
     res.json({ esphomeFiles });
   } catch (error) {
     console.error('[get-backup-esphome] Error:', error);
@@ -2149,9 +2241,31 @@ app.post('/api/get-backup-esphome-file', async (req, res) => {
       return res.status(404).json({ error: 'ESPHome feature disabled' });
     }
     const { backupPath, fileName } = req.body;
-    const esphomeDir = path.join(backupPath, 'esphome');
-    const filePath = resolveWithinDirectory(esphomeDir, fileName);
-    const content = await fs.readFile(filePath, 'utf-8');
+
+    // Check if Git mode is enabled
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    let content;
+
+    if (backupMode === 'git') {
+      // In Git mode, backupPath is actually a commit hash
+      const commitHash = backupPath;
+      console.log(`[get-backup-esphome-file] Reading from Git commit: ${commitHash}`);
+
+      if (!gitManager) {
+        return res.status(500).json({ error: 'Git manager not initialized' });
+      }
+
+      // Use git show to read file content from commit
+      content = await gitManager.git.show([`${commitHash}:esphome/${fileName}`]);
+    } else {
+      // Folder mode: Read from file system
+      const esphomeDir = path.join(backupPath, 'esphome');
+      const filePath = resolveWithinDirectory(esphomeDir, fileName);
+      content = await fs.readFile(filePath, 'utf-8');
+    }
+
     res.json({ content });
   } catch (error) {
     if (error.code === 'INVALID_PATH') {
@@ -2218,12 +2332,40 @@ app.post('/api/get-backup-packages', async (req, res) => {
       return res.status(404).json({ error: 'Packages feature disabled' });
     }
     const { backupPath } = req.body;
+
+    // Check if Git mode is enabled
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    let packageFiles = [];
+
+    if (backupMode === 'git') {
+      // In Git mode, backupPath is actually a commit hash
+      const commitHash = backupPath;
+      console.log(`[get-backup-packages] Reading from Git commit: ${commitHash}`);
+
+      if (!gitManager) {
+        return res.status(500).json({ error: 'Git manager not initialized' });
+      }
+
+      // Get all files in the commit
+      const allFiles = await gitManager.getFilesInCommit(commitHash);
+
+      // Filter for packages YAML files
+      packageFiles = allFiles
+        .filter(f => f.startsWith('packages/') && (f.endsWith('.yaml') || f.endsWith('.yml')))
+        .map(f => f.replace('packages/', ''));
+
+      return res.json({ packagesFiles: packageFiles });
+    }
+
+    // Folder mode: Read from file system
     const packagesDir = path.join(backupPath, 'packages');
-    
+
     try {
       // Check if packages directory exists
       await fs.access(packagesDir);
-      const packageFiles = await listYamlFilesRecursive(packagesDir);
+      packageFiles = await listYamlFilesRecursive(packagesDir);
       return res.json({ packagesFiles: packageFiles });
     } catch (dirError) {
       if (dirError.code === 'ENOENT') {
@@ -2247,9 +2389,31 @@ app.post('/api/get-backup-packages-file', async (req, res) => {
       return res.status(404).json({ error: 'Packages feature disabled' });
     }
     const { backupPath, fileName } = req.body;
-    const packagesDir = path.join(backupPath, 'packages');
-    const filePath = resolveWithinDirectory(packagesDir, fileName);
-    const content = await fs.readFile(filePath, 'utf-8');
+
+    // Check if Git mode is enabled
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    let content;
+
+    if (backupMode === 'git') {
+      // In Git mode, backupPath is actually a commit hash
+      const commitHash = backupPath;
+      console.log(`[get-backup-packages-file] Reading from Git commit: ${commitHash}`);
+
+      if (!gitManager) {
+        return res.status(500).json({ error: 'Git manager not initialized' });
+      }
+
+      // Use git show to read file content from commit
+      content = await gitManager.git.show([`${commitHash}:packages/${fileName}`]);
+    } else {
+      // Folder mode: Read from file system
+      const packagesDir = path.join(backupPath, 'packages');
+      const filePath = resolveWithinDirectory(packagesDir, fileName);
+      content = await fs.readFile(filePath, 'utf-8');
+    }
+
     res.json({ content });
   } catch (error) {
     if (error.code === 'INVALID_PATH') {

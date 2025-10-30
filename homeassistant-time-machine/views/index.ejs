@@ -95,7 +95,47 @@
           <p id="backupStatus" class="settings-inline-text"></p>
         </div>
 
+        <!-- Git-based Backup Settings -->
         <div class="form-group toggle-group" style="margin-bottom: 0;">
+          <label for="backupMode">Backup Mode</label>
+          <select id="backupMode" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+            <option value="folder">Folder Mode (Traditional)</option>
+            <option value="git">Git Mode (Recommended)</option>
+          </select>
+          <p style="font-size: 0.875rem; color: #666; margin-top: 4px; margin-bottom: 0;">
+            Git mode provides efficient storage with version control. Folder mode uses traditional timestamped folders.
+          </p>
+        </div>
+
+        <div id="gitModeSettings" style="display: none; margin-top: 12px;">
+          <div class="form-group toggle-group" style="margin-bottom: 0;">
+            <label>Enable Auto-Save</label>
+            <label class="toggle">
+              <input type="checkbox" id="fileWatchingEnabled">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <p style="font-size: 0.875rem; color: #666; margin-top: 4px; margin-bottom: 12px;">
+            Automatically create backups when config files are modified
+          </p>
+
+          <div id="fileWatchingOptions" style="display: none;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="fileWatchingDebounce">Debounce Time</label>
+              <select id="fileWatchingDebounce" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                <option value="30">30 seconds</option>
+                <option value="60" selected>60 seconds (recommended)</option>
+                <option value="120">2 minutes</option>
+                <option value="300">5 minutes</option>
+              </select>
+              <p style="font-size: 0.875rem; color: #666; margin-top: 4px; margin-bottom: 0;">
+                Wait time after last file change before creating backup
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group toggle-group" style="margin-bottom: 0; margin-top: 20px;">
           <label id="enableScheduledBackupLabel">Enable Scheduled Backup</label>
           <label class="toggle">
             <input type="checkbox" id="scheduleEnabled">
@@ -1789,6 +1829,25 @@
 
         document.getElementById('liveConfigPath').value = haConfig.liveConfigPath || '/config';
         document.getElementById('backupFolderPath').value = haConfig.backupFolderPath || '/media/backups/yaml';
+
+        // Load Git mode settings
+        document.getElementById('backupMode').value = haConfig.backupMode || 'folder';
+        document.getElementById('fileWatchingEnabled').checked = haConfig.fileWatchingEnabled || false;
+        document.getElementById('fileWatchingDebounce').value = haConfig.fileWatchingDebounce || 60;
+
+        // Show/hide Git settings based on backup mode
+        const gitModeSettings = document.getElementById('gitModeSettings');
+        const fileWatchingOptions = document.getElementById('fileWatchingOptions');
+        if (haConfig.backupMode === 'git') {
+          gitModeSettings.style.display = 'block';
+        } else {
+          gitModeSettings.style.display = 'none';
+        }
+        if (haConfig.fileWatchingEnabled) {
+          fileWatchingOptions.style.display = 'block';
+        } else {
+          fileWatchingOptions.style.display = 'none';
+        }
       }
       updateUIText(); // Update text for current style
       loadScheduleSettings();
@@ -1828,6 +1887,25 @@
       }
     });
 
+    // Git mode event listeners
+    document.getElementById('backupMode').addEventListener('change', (e) => {
+      const gitModeSettings = document.getElementById('gitModeSettings');
+      if (e.target.value === 'git') {
+        gitModeSettings.style.display = 'block';
+      } else {
+        gitModeSettings.style.display = 'none';
+      }
+    });
+
+    document.getElementById('fileWatchingEnabled').addEventListener('change', (e) => {
+      const fileWatchingOptions = document.getElementById('fileWatchingOptions');
+      if (e.target.checked) {
+        fileWatchingOptions.style.display = 'block';
+      } else {
+        fileWatchingOptions.style.display = 'none';
+      }
+    });
+
     // Settings form
     document.getElementById('settingsForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1864,7 +1942,12 @@
       
       // Save Docker app settings if in Docker mode
       if (shouldPersistPaths) {
-        console.log('[save-settings] Persisting settings:', { mode: haConfig?.mode, liveConfigPath, backupFolderPath });
+        // Get Git mode settings
+        const backupMode = document.getElementById('backupMode').value;
+        const fileWatchingEnabled = document.getElementById('fileWatchingEnabled').checked;
+        const fileWatchingDebounce = parseInt(document.getElementById('fileWatchingDebounce').value) || 60;
+
+        console.log('[save-settings] Persisting settings:', { mode: haConfig?.mode, liveConfigPath, backupFolderPath, backupMode, fileWatchingEnabled });
         try {
           const response = await fetch(url('/api/app-settings'), {
             method: 'POST',
@@ -1875,7 +1958,12 @@
               textStyle,
               theme: currentTheme,
               esphomeEnabled: esphomeFeatureEnabled,
-              packagesEnabled: packagesFeatureEnabled
+              packagesEnabled: packagesFeatureEnabled,
+              // Git-based backup settings
+              backupMode,
+              fileWatchingEnabled,
+              fileWatchingDebounce,
+              watchedPaths: ['config', 'lovelace', 'esphome', 'packages']
             })
           });
           console.log('[save-settings] Save response ok:', response.ok, 'status:', response.status);
