@@ -23,14 +23,27 @@ const TLS_CERT_ERROR_CODES = new Set([
   'ERR_TLS_CERT_SIGNATURE_ALGORITHM_UNSUPPORTED',
 ]);
 
+const TLS_ERROR_TEXT_PATTERN = /self signed certificate|unable to verify the first certificate/i;
+
 const isTlsCertificateError = (error) => {
   if (!error) return false;
-  if (error.code && TLS_CERT_ERROR_CODES.has(error.code)) {
-    return true;
+
+  const nestedCandidates = [
+    error,
+    error.cause,
+    error.reason,
+    error.cause?.cause,
+  ].filter(Boolean);
+
+  for (const candidate of nestedCandidates) {
+    if (candidate.code && TLS_CERT_ERROR_CODES.has(candidate.code)) {
+      return true;
+    }
+    if (typeof candidate.message === 'string' && TLS_ERROR_TEXT_PATTERN.test(candidate.message)) {
+      return true;
+    }
   }
-  if (typeof error.message === 'string') {
-    return error.message.includes('self signed certificate') || error.message.includes('unable to verify the first certificate');
-  }
+
   return false;
 };
 
@@ -1099,6 +1112,8 @@ app.post('/api/test-home-assistant-connection', async (req, res) => {
         console.warn('[test-connection] TLS verification failed, retrying with relaxed validation:', {
           endpoint,
           code: fetchError.code,
+          message: fetchError.message,
+          causeCode: fetchError.cause?.code,
         });
         const insecureAgent = new https.Agent({ rejectUnauthorized: false });
         response = await fetch(endpoint, { ...fetchOptions, agent: insecureAgent });
