@@ -18,7 +18,7 @@ hassio_role: default
 ingress: true
 ingress_port: 54000
 panel_icon: mdi:history
-panel_title: Home Assistant Time Machine
+panel_title: Time Machine
 map: [config:rw, backup:rw, media:rw, share:rw, ssl:rw, addons:rw, addon_configs:rw]
 ports:
   54000/tcp: null

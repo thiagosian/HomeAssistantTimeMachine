@@ -1,4 +1,4 @@
-# v2.0.0
+# v2
 
 ## What's New!
 - Added full **Ingress support**, allowing direct access through the Home Assistant UI — no port forwarding required.  
