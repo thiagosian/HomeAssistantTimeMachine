@@ -1,4 +1,12 @@
 /* ============================================================
+   SUBTABS VISIBILITY (duplicated from style.css for reliability)
+   ============================================================ */
+
+.subtabs.hidden {
+  display: none !important;
+}
+
+/* ============================================================
    FILES TAB - THREE PANEL LAYOUT
    ============================================================ */
 
@@ -100,25 +108,17 @@
   flex-shrink: 0;
   width: 20px;
   height: 20px;
-  position: relative;
-}
-
-.folder-icon {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: -18px;
 }
 
 .folder-chevron {
+  flex-shrink: 0;
   width: 12px;
   height: 12px;
   color: var(--text-secondary);
   transition: transform 0.2s ease;
-  flex-shrink: 0;
 }
 
-.file-tree-item.expanded > div > .folder-icon > .folder-chevron {
+.file-tree-item.expanded > div > .folder-chevron {
   transform: rotate(90deg);
 }
 

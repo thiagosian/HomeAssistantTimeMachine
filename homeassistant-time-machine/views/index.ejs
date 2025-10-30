@@ -250,7 +250,7 @@
       </button>
     </div>
 
-    <div class="subtabs" id="subtabs">
+    <div class="subtabs hidden" id="subtabs">
       <button class="subtab active" data-tab="automations" id="automationsTab">Automations</button>
       <button class="subtab" data-tab="scripts" id="scriptsTab">Scripts</button>
       <button class="subtab" data-tab="lovelace" id="lovelaceTab">Lovelace</button>
@@ -315,6 +315,14 @@
             <h2>File Tree</h2>
             <p id="fileTreeCount">Loading...</p>
           </div>
+        </div>
+        <div style="padding: 0 16px 12px 16px;">
+          <input
+            type="text"
+            id="fileTreeSearch"
+            placeholder="Search files..."
+            style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background-color: var(--input-bg); color: var(--text-color); font-size: 14px;"
+          />
         </div>
         <div id="fileTree" class="file-tree">
           <p class="loading">Loading file tree...</p>
@@ -1880,6 +1888,30 @@
     document.getElementById('searchBox').addEventListener('input', applyFilters);
     document.getElementById('sortSelect').addEventListener('change', applyFilters);
 
+    // File tree search
+    document.getElementById('fileTreeSearch').addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const items = document.querySelectorAll('.file-tree-item');
+
+      items.forEach(item => {
+        const nameEl = item.querySelector('.file-tree-name');
+        if (!nameEl) return;
+
+        const name = nameEl.textContent.toLowerCase();
+        const matches = name.includes(searchTerm);
+
+        if (matches || searchTerm === '') {
+          item.style.display = '';
+          // If it's a folder and matches, expand it
+          if (searchTerm !== '' && item.querySelector('.file-tree-folder')) {
+            item.classList.add('expanded');
+          }
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+
     // Path validation
     async function validateLivePath(path) {
       const errorEl = document.getElementById('liveConfigPathError');
@@ -2830,10 +2862,10 @@
         const folderDiv = document.createElement('div');
         folderDiv.className = 'file-tree-folder';
         folderDiv.innerHTML = `
-          <span class="file-tree-icon folder-icon">
-            <svg class="folder-chevron" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
+          <svg class="folder-chevron" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          <span class="file-tree-icon">
             <svg class="folder-svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
