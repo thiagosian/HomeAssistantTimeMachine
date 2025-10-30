@@ -1848,6 +1848,34 @@
       }
     }
 
+    // Initialize tab state on page load
+    // The HTML defaults to "Backups" tab being active, but we want Files to be the default
+    document.addEventListener('DOMContentLoaded', () => {
+      const filesTab = document.getElementById('filesTab');
+      const backupsTab = document.getElementById('backupsTab');
+      const subtabs = document.getElementById('subtabs');
+      const filesContent = document.getElementById('filesContent');
+      const standardContent = document.getElementById('standardContent');
+
+      // Check which tab is active in HTML
+      if (filesTab && filesTab.classList.contains('active')) {
+        // Files tab is active - hide subtabs, show files content
+        subtabs.classList.add('hidden');
+        standardContent.style.display = 'none';
+        filesContent.style.display = 'grid';
+        currentMode = 'files';
+        loadFileTree();
+      } else if (backupsTab && backupsTab.classList.contains('active')) {
+        // Backups tab is active - show subtabs, hide files content
+        subtabs.classList.remove('hidden');
+        standardContent.style.display = 'grid';
+        filesContent.style.display = 'none';
+        // Keep the currently selected subtab active (or default to automations)
+        const activeSubtab = document.querySelector('.subtab.active');
+        currentMode = activeSubtab ? activeSubtab.dataset.tab : 'automations';
+      }
+    });
+
     document.getElementById('searchBox').addEventListener('input', applyFilters);
     document.getElementById('sortSelect').addEventListener('change', applyFilters);
 
@@ -2363,6 +2391,38 @@
       loadBackups();
     })();
 
+    // Parse unified diff format (git diff output) for Files mode
+    function parseDiff(diffText) {
+      if (!diffText || diffText.trim() === '') {
+        return '<div class="diff-empty">No changes</div>';
+      }
+
+      const lines = diffText.split('\n');
+      let html = '';
+
+      for (let line of lines) {
+        // Skip file headers (already shown in UI)
+        if (line.startsWith('+++') || line.startsWith('---')) {
+          continue;
+        }
+
+        // Determine line type and apply appropriate styling
+        let className = 'diff-context';
+        if (line.startsWith('+')) {
+          className = 'diff-addition';
+        } else if (line.startsWith('-')) {
+          className = 'diff-deletion';
+        } else if (line.startsWith('@@')) {
+          className = 'diff-hunk-header';
+        }
+
+        const escapedLine = escapeHtml(line);
+        html += `<div class="${className}">${escapedLine}</div>`;
+      }
+
+      return html;
+    }
+
     // Generate split diff with paired columns
     function generateDiff(oldText, newText, options = {}) {
       if (!window.Diff) {
@@ -2812,6 +2872,12 @@
           document.querySelectorAll('.file-tree-file').forEach(f => f.classList.remove('selected'));
           fileDiv.classList.add('selected');
           loadFileHistory(node.path, node.name);
+
+          // Scroll the history panel (middle panel) to top for better UX
+          const historyPanel = document.querySelector('.panel--files:nth-child(2)');
+          if (historyPanel) {
+            historyPanel.scrollTop = 0;
+          }
         });
 
         li.appendChild(fileDiv);
