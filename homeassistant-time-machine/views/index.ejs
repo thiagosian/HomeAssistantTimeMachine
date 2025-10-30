@@ -362,10 +362,10 @@
 
   <script>
     // Base path for all API calls
-    const BASE_PATH = '<%= ingressPath %>';
+    const BASE_PATH = <%= JSON.stringify(ingressPath || '') %>;
     const url = (path) => BASE_PATH + path;
 
-    console.log('[app] Loaded! v<%= version %>');
+    console.log('[app] Loaded! v' + <%= JSON.stringify(version) %>);
     console.log('[app] Base path:', BASE_PATH || '(direct access)');
 
     // State
