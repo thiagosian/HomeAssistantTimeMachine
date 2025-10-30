@@ -4,6 +4,16 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 
 ## What's New!
 
+### 🚀 **Git-Based Backup Mode (NEW!)**
+*   **Efficient Storage:** Git mode uses ~98% less storage than traditional folder backups by storing only changes (deltas)
+*   **Auto-Save:** Automatically creates backups when config files are modified with configurable debounce (30s-5min)
+*   **Version Control:** Full Git history with commit messages, tags, and diff viewing
+*   **Hybrid Mode:** Choose between Git mode (efficient) or Folder mode (traditional) - switch anytime!
+*   **Smart Tagging:** Distinguishes between scheduled backups and auto-save backups
+*   **Backwards Compatible:** Default is folder mode - existing installations unchanged
+*   📖 **[Git Mode User Guide](GIT_MODE_README.md)** | **[Technical Details](IMPLEMENTATION_SUMMARY.md)**
+
+### Other Features
 *   **Ingress Support:** Full support for Home Assistant ingress, allowing seamless access through the Home Assistant UI without port forwarding.
 *   **Lovelace Backup Support:** Comprehensive backup and restore functionality for your Lovelace UI configurations, ensuring your dashboards are always safe.
 *   **ESPHome & Packages Backup Support:** Enable backups for ESPHome and Packages via a toggle in the add-on configuration.
@@ -11,7 +21,7 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 *   **Max Backups:** Set a limit on how many backups are kept.
 *   **Authentication:** Secure access with Home Assistant authentication integration, automatically proxying through the Supervisor when available.
 *   **Docker Container Installation:** Simplified installation process with a dedicated Docker container option, providing more flexibility for users without the Home Assistant add-on store.
-*   **Optimized Size & Performance:** The add-on is now 4X smaller and uses 6X less memory, making it faster to download and run.  
+*   **Optimized Size & Performance:** The add-on is now 4X smaller and uses 6X less memory, making it faster to download and run.
 *   **Dark/Light Mode:** Choose between dark and light themes in the configuration.
 *   **Flexible Backup Locations:** Backups can now be stored in `/share` `/backup` `/config` or `/media`. Folders are created automatically, and remote share backups are supported.
 *   **REST API:** Comprehensive API for managing backups, restores, and configurations.
@@ -26,12 +36,19 @@ Home Assistant Time Machine is a web-based tool that acts as a "Time Machine" fo
 
 ## Features
 
+### Backup Modes
+*   **Git Mode (NEW!):** Efficient version-controlled backups with 98% storage savings
+*   **Folder Mode:** Traditional timestamped backup folders
+*   **Auto-Save (Git Mode):** Automatic backups when files are modified
+*   **Scheduled Backups:** Configure automatic backups directly from the UI
+*   **Hybrid Support:** Switch between Git and Folder modes anytime
+
+### Core Features
 *   **Browse Backups:** Easily browse through your Home Assistant backup YAML files.
 *   **View Changes:** See a side-by-side diff of the changes between a backed-up item and the live version.
 *   **Restore Individual Items:** Restore individual automations or scripts without having to restore an entire backup.
 *   **Safety first:** It automatically creates a backup of your YAML files in your backups folder before restoring anything.
 *   **Reload Home Assistant:** Reload automations or scripts in Home Assistant directly from the UI after a restore.
-*   **Scheduled Backups:** Configure automatic backups of your Home Assistant configuration directly from the UI.
 
 ## Installation
 
@@ -73,7 +90,7 @@ Supplying the URL and token keeps credentials out of the UI. These environment v
 
 #### Changing Options in Docker
 
-After the container is running, you can toggle ESPHome support, adjust text style, and switch light/dark modes by POSTing to the app settings API. This persists the value in `/data/homeassistant-time-machine/docker-app-settings.json` so the UI reflects it on reload:
+After the container is running, you can toggle ESPHome support, adjust text style, switch light/dark modes, and **enable Git-based backups** by POSTing to the app settings API. This persists the value in `/data/homeassistant-time-machine/docker-app-settings.json` so the UI reflects it on reload:
 
 ```bash
 curl -X POST http://localhost:54000/api/app-settings \
@@ -84,11 +101,25 @@ curl -X POST http://localhost:54000/api/app-settings \
         "textStyle": "default",
         "theme": "dark",
         "esphomeEnabled": true,
-        "packagesEnabled": true
+        "packagesEnabled": true,
+        "backupMode": "git",
+        "fileWatchingEnabled": true,
+        "fileWatchingDebounce": 60,
+        "watchedPaths": ["config", "lovelace", "esphome", "packages"]
       }'
 ```
 
-Adjust the payload if you need different paths, theme, text style, or want to enable/disable features (`"esphomeEnabled": true|false`, `"packagesEnabled": true|false`, `"theme": light|dark`, `"textStyle": default|pirate|hacker|noir_detective|personal_trainer|scooby_doo`).
+**Available Options:**
+*   `"esphomeEnabled": true|false` - Enable/disable ESPHome backups
+*   `"packagesEnabled": true|false` - Enable/disable Packages backups
+*   `"theme": "light"|"dark"` - UI theme
+*   `"textStyle": "default"|"pirate"|"hacker"|"noir_detective"|"personal_trainer"|"scooby_doo"` - UI text style
+*   `"backupMode": "git"|"folder"` - **NEW!** Backup mode (git = efficient, folder = traditional)
+*   `"fileWatchingEnabled": true|false` - **NEW!** Auto-save on file changes (Git mode only)
+*   `"fileWatchingDebounce": 30|60|120|300` - **NEW!** Seconds to wait before auto-backup
+*   `"watchedPaths": [...]` - **NEW!** Which paths to monitor for auto-save
+
+📖 **See [Git Mode User Guide](GIT_MODE_README.md) for detailed configuration examples and best practices.**
 
 #### Accessing the Web Interface
 
