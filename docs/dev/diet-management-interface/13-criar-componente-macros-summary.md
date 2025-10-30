@@ -358,3 +358,47 @@ export function MacrosSummary({ data, showDetails = true }: MacrosSummaryProps) 
     targetFatG: 60,
   }} />
   ```
+
+---
+
+## 📊 Relatório de Execução
+
+**Data:** 2025-10-30
+**Status:** ✅ Concluído com sucesso
+
+### Arquivos Criados/Modificados
+
+1. **`codex/frontend/components/nutrition/MacrosSummary.tsx`**
+   - Componente completamente reescrito conforme especificação
+   - Implementação com todos os recursos solicitados:
+     - Tipo `MacrosSummaryData` exportado
+     - Funções `calculateDeviation()` e `calculateTotalKcal()`
+     - Componente interno `MacroRow` com progress bars coloridas
+     - Sistema de status (success/warning/error) baseado em desvio percentual
+     - Badges de desvio exibidos apenas quando >5%
+     - Status geral com validação de todos os macros
+     - Estilos Whoop com glass-card effect
+
+2. **`codex/frontend/app/planos/page.tsx`**
+   - Atualizado para usar nova interface do MacrosSummary
+   - Props alteradas de `totals/targets` para `data` estruturado
+   - Adicionada diretiva `'use client'` para corrigir erro de build
+
+### Validações Executadas
+
+- ✅ **TypeScript**: Compilação sem erros (`npx tsc --noEmit`)
+- ✅ **ESLint**: Sem warnings ou erros (`npm run lint`)
+- ✅ **Build**: Produção compilada com sucesso (`npm run build`)
+
+### Características Implementadas
+
+- **Progress Bars Dinâmicas**: Cores baseadas em status (verde ±5%, amarelo 5-10%, vermelho >10%)
+- **Cálculo de Calorias**: Automático usando fórmula correta (P×4 + C×4 + F×9)
+- **Visual Feedback**: Ícones (CheckCircle, AlertTriangle, XCircle) e badges de desvio
+- **Responsividade**: Layout otimizado com shadcn/ui components
+- **TypeScript Completo**: Tipagem forte com interfaces exportadas
+
+### Melhorias Aplicadas
+
+- Correção de bug no arquivo de teste `app/planos/page.tsx` que estava usando interface antiga
+- Adição de `'use client'` necessária para Next.js 16 com event handlers
