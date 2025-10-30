@@ -1848,9 +1848,9 @@
       }
     }
 
-    // Initialize tab state on page load
+    // Initialize tab state immediately (script is at bottom of body, DOM is ready)
     // The HTML defaults to "Backups" tab being active, but we want Files to be the default
-    document.addEventListener('DOMContentLoaded', () => {
+    (() => {
       const filesTab = document.getElementById('filesTab');
       const backupsTab = document.getElementById('backupsTab');
       const subtabs = document.getElementById('subtabs');
@@ -1874,7 +1874,7 @@
         const activeSubtab = document.querySelector('.subtab.active');
         currentMode = activeSubtab ? activeSubtab.dataset.tab : 'automations';
       }
-    });
+    })();
 
     document.getElementById('searchBox').addEventListener('input', applyFilters);
     document.getElementById('sortSelect').addEventListener('change', applyFilters);
