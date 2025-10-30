@@ -10,7 +10,9 @@ const GitManager = require('./git-manager');
 const chokidar = require('chokidar');
 const debounce = require('debounce');
 
-const version = '2.9.270';
+// Read version from package.json
+const packageJson = JSON.parse(fsSync.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+const version = packageJson.version;
 const DEBUG_LOGS = process.env.DEBUG_LOGS === 'true';
 const debugLog = (...args) => {
   if (DEBUG_LOGS) {
@@ -154,7 +156,7 @@ app.get('/', async (req, res) => {
     ]);
     res.render('index', {
       title: 'Home Assistant Time Machine',
-      version: '2.9.304',
+      version,
       currentMode: 'automations',
       esphomeEnabled,
       packagesEnabled
@@ -163,7 +165,7 @@ app.get('/', async (req, res) => {
     console.error('[home] Failed to determine feature status:', error);
     res.render('index', {
       title: 'Home Assistant Time Machine',
-      version: '2.9.304',
+      version,
       currentMode: 'automations',
       esphomeEnabled: false,
       packagesEnabled: false
@@ -175,7 +177,7 @@ app.get('/', async (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
-    version: '2.9.304',
+    version,
     ingress: !!INGRESS_PATH,
     ingressPath: INGRESS_PATH || 'none',
     timestamp: Date.now()
@@ -2684,7 +2686,7 @@ app.get('/api/health', async (req, res) => {
     const options = await getAddonOptions();
     res.json({
       ok: true,
-      version: '2.9.268',
+      version,
       mode: options.mode,
       ingress: !!INGRESS_PATH,
       ingressPath: INGRESS_PATH || 'none',
