@@ -100,8 +100,6 @@ After starting the container, access the web interface at `http://localhost:5400
 
 ## Usage
 
-> **Tip:** If you expose port `54000/tcp` (for example, via the add-on's Configuration tab), you can open the UI directly at `http://your-host:54000` without relying on ingress.
-
 ### Home Assistant add-on
 
 1.  **Configure the add-on:** In the add-on's configuration tab, set the Home Assistant URL and Long-Lived Access Token.
