@@ -15,6 +15,7 @@
 
 ## Updating
 If you’re updating from **v1**, note that this release is a **complete rebuild**.  
+
 After updating:
 1. **Restart the add-on.**  
 2. **Re-enter your backup path** in the settings menu.  
