@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<%= url('/static/css/style.css') %>">
+  <link rel="stylesheet" href="<%- url('/static/css/style.css?v=' + version) %>">
   <script>
     // Set theme immediately (before <body> exists) to prevent flash
     const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -1761,16 +1761,9 @@
 
         if (tabType === 'files') {
           // Switch to Files mode
-          console.log('[DEBUG] Files tab clicked');
           document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
-          console.log('[DEBUG] About to add hidden class to subtabs');
-          const subtabsEl = document.getElementById('subtabs');
-          console.log('[DEBUG] subtabs element:', subtabsEl, 'classes before:', subtabsEl ? subtabsEl.className : 'NULL');
-          if (subtabsEl) {
-            subtabsEl.classList.add('hidden');
-            console.log('[DEBUG] classes after:', subtabsEl.className);
-          }
+          document.getElementById('subtabs').classList.add('hidden');
           document.getElementById('standardContent').style.display = 'none';
           document.getElementById('filesContent').style.display = 'grid';
           currentMode = 'files';
