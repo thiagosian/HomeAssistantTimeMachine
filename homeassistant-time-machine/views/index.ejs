@@ -96,13 +96,13 @@
         </div>
 
         <!-- Git-based Backup Settings -->
-        <div class="form-group toggle-group" style="margin-bottom: 0;">
+        <div class="form-group form-group--stacked">
           <label for="backupMode">Backup Mode</label>
-          <select id="backupMode" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+          <select id="backupMode">
             <option value="folder">Folder Mode (Traditional)</option>
             <option value="git">Git Mode (Recommended)</option>
           </select>
-          <p style="font-size: 0.875rem; color: #666; margin-top: 4px; margin-bottom: 0;">
+          <p style="font-size: 0.875rem; color: #9ca3af; margin-top: 8px; margin-bottom: 0;">
             Git mode provides efficient storage with version control. Folder mode uses traditional timestamped folders.
           </p>
         </div>
@@ -115,20 +115,20 @@
               <span class="toggle-slider"></span>
             </label>
           </div>
-          <p style="font-size: 0.875rem; color: #666; margin-top: 4px; margin-bottom: 12px;">
+          <p style="font-size: 0.875rem; color: #9ca3af; margin-top: 8px; margin-bottom: 12px;">
             Automatically create backups when config files are modified
           </p>
 
-          <div id="fileWatchingOptions" style="display: none;">
-            <div class="form-group" style="margin-bottom: 0;">
+          <div id="fileWatchingOptions" style="display: none; margin-top: 12px;">
+            <div class="form-group form-group--stacked">
               <label for="fileWatchingDebounce">Debounce Time</label>
-              <select id="fileWatchingDebounce" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+              <select id="fileWatchingDebounce">
                 <option value="30">30 seconds</option>
                 <option value="60" selected>60 seconds (recommended)</option>
                 <option value="120">2 minutes</option>
                 <option value="300">5 minutes</option>
               </select>
-              <p style="font-size: 0.875rem; color: #666; margin-top: 4px; margin-bottom: 0;">
+              <p style="font-size: 0.875rem; color: #9ca3af; margin-top: 8px; margin-bottom: 0;">
                 Wait time after last file change before creating backup
               </p>
             </div>
