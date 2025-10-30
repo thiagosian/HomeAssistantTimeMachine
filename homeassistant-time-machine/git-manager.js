@@ -323,6 +323,148 @@ class GitManager {
       return {};
     }
   }
+
+  /**
+   * Get commit history for a specific file
+   * Tracks file across renames using --follow
+   * @param {string} filePath - Path to file relative to repo root
+   * @param {number} limit - Maximum commits to return (0 = all)
+   * @returns {Promise<Array<{hash: string, date: string, message: string, author: string}>>}
+   */
+  async getFileHistory(filePath, limit = 100) {
+    try {
+      const logOptions = {
+        file: filePath,
+        format: {
+          hash: '%H',
+          date: '%ci',
+          message: '%s',
+          author: '%an'
+        },
+        '--follow': null // Track file through renames
+      };
+
+      if (limit > 0) {
+        logOptions.maxCount = limit;
+      }
+
+      console.log(`[GitManager] Getting file history for ${filePath} (limit: ${limit || 'all'})`);
+      const log = await this.git.log(logOptions);
+
+      return log.all.map(commit => ({
+        hash: commit.hash,
+        date: commit.date,
+        message: commit.message,
+        author: commit.author
+      }));
+    } catch (error) {
+      console.error(`[GitManager] Error getting file history for ${filePath}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all files tracked in the repository (at HEAD)
+   * @returns {Promise<Array<string>>}
+   */
+  async getAllTrackedFiles() {
+    try {
+      console.log('[GitManager] Getting all tracked files');
+      const result = await this.git.raw(['ls-tree', '-r', '--name-only', 'HEAD']);
+      const files = result.split('\n').filter(Boolean);
+      console.log(`[GitManager] Found ${files.length} tracked files`);
+      return files;
+    } catch (error) {
+      console.error('[GitManager] Error getting tracked files:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Build hierarchical file tree from flat file list
+   * Organizes files into folder structure with sorting (folders first, then alphabetically)
+   * @returns {Promise<{name: string, type: string, path: string, children: Array}>}
+   */
+  async getFileTree() {
+    try {
+      console.log('[GitManager] Building file tree');
+      const files = await this.getAllTrackedFiles();
+
+      const tree = {
+        name: 'root',
+        type: 'folder',
+        path: '',
+        children: []
+      };
+
+      // Build tree structure
+      files.forEach(filePath => {
+        const parts = filePath.split('/');
+        let current = tree;
+
+        parts.forEach((part, index) => {
+          const isFile = index === parts.length - 1;
+          const currentPath = parts.slice(0, index + 1).join('/');
+
+          let child = current.children.find(c => c.name === part);
+
+          if (!child) {
+            child = {
+              name: part,
+              type: isFile ? 'file' : 'folder',
+              path: currentPath,
+              children: isFile ? undefined : []
+            };
+            current.children.push(child);
+          }
+
+          if (!isFile) {
+            current = child;
+          }
+        });
+      });
+
+      // Sort tree: folders first, then files, alphabetically
+      function sortTree(node) {
+        if (node.children) {
+          node.children.sort((a, b) => {
+            // Folders before files
+            if (a.type !== b.type) {
+              return a.type === 'folder' ? -1 : 1;
+            }
+            // Alphabetically within same type
+            return a.name.localeCompare(b.name);
+          });
+          // Recursively sort child folders
+          node.children.forEach(sortTree);
+        }
+      }
+      sortTree(tree);
+
+      console.log(`[GitManager] File tree built successfully`);
+      return tree;
+    } catch (error) {
+      console.error('[GitManager] Error building file tree:', error);
+      return { name: 'root', type: 'folder', path: '', children: [] };
+    }
+  }
+
+  /**
+   * Get file content at a specific commit
+   * @param {string} commitHash - Commit hash
+   * @param {string} filePath - Path to file relative to repo root
+   * @returns {Promise<{success: boolean, content?: string, message?: string}>}
+   */
+  async getFileContentAtCommit(commitHash, filePath) {
+    try {
+      console.log(`[GitManager] Getting ${filePath} at commit ${commitHash}`);
+      const content = await this.git.show([`${commitHash}:${filePath}`]);
+      return { success: true, content };
+    } catch (error) {
+      console.error(`[GitManager] Error getting file content:`, error);
+      return { success: false, message: error.message };
+    }
+  }
 }
 
 module.exports = GitManager;

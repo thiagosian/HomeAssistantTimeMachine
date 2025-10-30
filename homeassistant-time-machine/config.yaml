@@ -1,5 +1,5 @@
 name: Home Assistant Time Machine
-version: 2.0.2
+version: 3.0.0-alpha
 slug: homeassistant-time-machine
 description: Browse and restore Home Assistant configuration backups.
 url: https://github.com/saihgupr/HomeAssistantTimeMachine

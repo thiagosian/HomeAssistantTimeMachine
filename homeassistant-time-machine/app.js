@@ -1072,6 +1072,98 @@ app.post('/api/git-files', async (req, res) => {
   }
 });
 
+// Get hierarchical file tree from Git repository
+app.get('/api/git-file-tree', async (req, res) => {
+  try {
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    if (backupMode !== 'git') {
+      return res.status(400).json({ error: 'Git mode is not enabled' });
+    }
+
+    if (!gitManager) {
+      return res.status(500).json({ error: 'Git manager not initialized' });
+    }
+
+    console.log('[git-file-tree] Building file tree');
+    const tree = await gitManager.getFileTree();
+
+    res.json({ tree });
+  } catch (error) {
+    console.error('[git-file-tree] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get commit history for a specific file
+app.post('/api/git-file-history', async (req, res) => {
+  try {
+    const { filePath, limit } = req.body;
+
+    if (!filePath) {
+      return res.status(400).json({ error: 'File path is required' });
+    }
+
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    if (backupMode !== 'git') {
+      return res.status(400).json({ error: 'Git mode is not enabled' });
+    }
+
+    if (!gitManager) {
+      return res.status(500).json({ error: 'Git manager not initialized' });
+    }
+
+    console.log(`[git-file-history] Getting history for ${filePath} (limit: ${limit || 100})`);
+    const commits = await gitManager.getFileHistory(filePath, limit || 100);
+
+    res.json({ commits });
+  } catch (error) {
+    console.error('[git-file-history] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get file content at a specific commit
+app.post('/api/git-file-content', async (req, res) => {
+  try {
+    const { commitHash, filePath } = req.body;
+
+    if (!commitHash) {
+      return res.status(400).json({ error: 'Commit hash is required' });
+    }
+
+    if (!filePath) {
+      return res.status(400).json({ error: 'File path is required' });
+    }
+
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    if (backupMode !== 'git') {
+      return res.status(400).json({ error: 'Git mode is not enabled' });
+    }
+
+    if (!gitManager) {
+      return res.status(500).json({ error: 'Git manager not initialized' });
+    }
+
+    console.log(`[git-file-content] Getting ${filePath} at commit ${commitHash}`);
+    const result = await gitManager.getFileContentAtCommit(commitHash, filePath);
+
+    if (result.success) {
+      res.json({ content: result.content });
+    } else {
+      res.status(404).json({ error: result.message });
+    }
+  } catch (error) {
+    console.error('[git-file-content] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get backup automations
 app.post('/api/get-backup-automations', async (req, res) => {
   try {
