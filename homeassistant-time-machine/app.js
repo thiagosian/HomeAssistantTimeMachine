@@ -1093,7 +1093,13 @@ app.post('/api/get-backup-automations', async (req, res) => {
       }
 
       // Use git show to read file content from commit
-      content = await gitManager.git.show([`${commitHash}:automations.yaml`]);
+      try {
+        content = await gitManager.git.show([`${commitHash}:automations.yaml`]);
+      } catch (gitError) {
+        // File doesn't exist in this commit (e.g., initial commit with only .gitignore)
+        console.log(`[get-backup-automations] automations.yaml not found in commit ${commitHash}, returning empty array`);
+        return res.json({ automations: [] });
+      }
     } else {
       // Folder mode: Read from file system
       const automationsFile = path.join(backupPath, 'automations.yaml');
@@ -1129,7 +1135,13 @@ app.post('/api/get-backup-scripts', async (req, res) => {
       }
 
       // Use git show to read file content from commit
-      content = await gitManager.git.show([`${commitHash}:scripts.yaml`]);
+      try {
+        content = await gitManager.git.show([`${commitHash}:scripts.yaml`]);
+      } catch (gitError) {
+        // File doesn't exist in this commit (e.g., initial commit with only .gitignore)
+        console.log(`[get-backup-scripts] scripts.yaml not found in commit ${commitHash}, returning empty array`);
+        return res.json({ scripts: [] });
+      }
     } else {
       // Folder mode: Read from file system
       const scriptsFile = path.join(backupPath, 'scripts.yaml');
@@ -2161,11 +2173,16 @@ app.post('/api/get-backup-lovelace-file', async (req, res) => {
       }
 
       // Use git show to read file content from commit
-      const content = await gitManager.git.show([`${commitHash}:.storage/${fileName}`]);
-
-      // Send as JSON response
-      res.setHeader('Content-Type', 'application/json');
-      res.send(content);
+      try {
+        const content = await gitManager.git.show([`${commitHash}:.storage/${fileName}`]);
+        // Send as JSON response
+        res.setHeader('Content-Type', 'application/json');
+        res.send(content);
+      } catch (gitError) {
+        // File doesn't exist in this commit
+        console.log(`[get-backup-lovelace-file] .storage/${fileName} not found in commit ${commitHash}`);
+        return res.status(404).json({ error: 'File not found in this backup' });
+      }
     } else {
       // Folder mode: Send file from file system
       const filePath = path.join(backupPath, '.storage', fileName);
@@ -2340,7 +2357,13 @@ app.post('/api/get-backup-esphome-file', async (req, res) => {
       }
 
       // Use git show to read file content from commit
-      content = await gitManager.git.show([`${commitHash}:esphome/${fileName}`]);
+      try {
+        content = await gitManager.git.show([`${commitHash}:esphome/${fileName}`]);
+      } catch (gitError) {
+        // File doesn't exist in this commit
+        console.log(`[get-backup-esphome-file] esphome/${fileName} not found in commit ${commitHash}`);
+        return res.status(404).json({ error: 'File not found in this backup' });
+      }
     } else {
       // Folder mode: Read from file system
       const esphomeDir = path.join(backupPath, 'esphome');
@@ -2488,7 +2511,13 @@ app.post('/api/get-backup-packages-file', async (req, res) => {
       }
 
       // Use git show to read file content from commit
-      content = await gitManager.git.show([`${commitHash}:packages/${fileName}`]);
+      try {
+        content = await gitManager.git.show([`${commitHash}:packages/${fileName}`]);
+      } catch (gitError) {
+        // File doesn't exist in this commit
+        console.log(`[get-backup-packages-file] packages/${fileName} not found in commit ${commitHash}`);
+        return res.status(404).json({ error: 'File not found in this backup' });
+      }
     } else {
       // Folder mode: Read from file system
       const packagesDir = path.join(backupPath, 'packages');
