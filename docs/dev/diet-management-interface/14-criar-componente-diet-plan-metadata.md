@@ -454,16 +454,89 @@ export function DietPlanMetadata({
 
 ## ✅ Critérios de Aceitação
 
-- [ ] Arquivo `components/nutrition/DietPlanMetadata.tsx` criado
-- [ ] Schema `dietPlanMetadataSchema` definido e exportado
-- [ ] Type `DietPlanMetadataFormData` exportado
-- [ ] Todos os campos obrigatórios com validação Zod
-- [ ] Calorias totais calculadas automaticamente (display only badge)
-- [ ] Select de objective com labels em português
-- [ ] Date inputs funcionam corretamente
-- [ ] Campos opcionais dentro de `<details>` collapsible
-- [ ] Error messages exibidas abaixo de cada field
-- [ ] Form submits via `onSubmit` callback
-- [ ] Estilos Whoop com glass-card effect
-- [ ] Compilação TypeScript sem erros
+- [x] Arquivo `components/nutrition/DietPlanMetadata.tsx` criado
+- [x] Schema `dietPlanMetadataSchema` definido e exportado
+- [x] Type `DietPlanMetadataFormData` exportado
+- [x] Todos os campos obrigatórios com validação Zod
+- [x] Calorias totais calculadas automaticamente (display only badge)
+- [x] Select de objective com labels em português
+- [x] Date inputs funcionam corretamente
+- [x] Campos opcionais dentro de `<details>` collapsible
+- [x] Error messages exibidas abaixo de cada field
+- [x] Form submits via `onSubmit` callback
+- [x] Estilos Whoop com glass-card effect
+- [x] Compilação TypeScript sem erros
 - [ ] Teste visual com defaultValues preenchidos
+
+---
+
+## 📊 Relatório de Execução
+
+**Data:** 2025-10-30
+**Status:** ✅ Concluído
+
+### Implementação Realizada
+
+1. **Arquivo criado:** `frontend/components/nutrition/DietPlanMetadata.tsx`
+   - Componente funcional com todas as features especificadas
+   - Validação completa via Zod schema
+   - Integração com react-hook-form usando zodResolver
+
+2. **Schema e Validação:**
+   - Schema `dietPlanMetadataSchema` definido com todas as validações
+   - Type `DietPlanMetadataFormData` exportado e inferido corretamente
+   - Campos numéricos com validação de range (min/max)
+   - Campos de data com validação de formato ISO
+   - Campos opcionais (validTo, strategy, notes)
+
+3. **Features Implementadas:**
+   - Cálculo automático de calorias totais (Proteína × 4 + Carboidratos × 4 + Gordura × 9)
+   - Display de calorias em badge com atualização em tempo real via `form.watch()`
+   - Select de objetivo com labels em português
+   - Campos de data funcionais (type="date")
+   - Section collapsible para campos opcionais (`<details>`)
+   - Error messages com FormMessage do shadcn/ui
+   - Estilos Whoop com glass-card effect
+
+4. **Ajustes Técnicos:**
+   - **Desafio TypeScript:** O uso de `z.coerce.number()` causava erros de inferência de tipos com zodResolver
+   - **Solução aplicada:** Migração para `z.number()` com `valueAsNumber` nos inputs
+   - Todos os inputs numéricos agora usam `onChange={(e) => field.onChange(e.target.valueAsNumber)}`
+   - Isso garante que os valores sejam números nativos ao invés de strings
+
+5. **Validações de Build:**
+   - ✅ ESLint passou sem warnings (`npm run lint`)
+   - ✅ TypeScript compilation passou sem erros (`npm run build`)
+   - ✅ Next.js build completado com sucesso
+
+### Arquitetura do Componente
+
+```
+DietPlanMetadata
+├── Props: defaultValues, onSubmit, isSubmitting
+├── Form State: react-hook-form + zodResolver
+├── Computed: totalKcal (via watch)
+└── Layout:
+    ├── Row 1: planName (full width)
+    ├── Row 2: objective + validFrom + validTo (grid 3 cols)
+    ├── Row 3: targetProtein + targetCarbs + targetFat (grid 3 cols)
+    ├── Row 4: referenceBodyWeight + tmbEstimated (grid 2 cols)
+    ├── Badge: Total kcal calculado
+    └── Collapsible: strategy + notes
+```
+
+### Notas Técnicas
+
+- Componente marcado como `'use client'` para uso de hooks
+- Todos os campos numéricos usam `valueAsNumber` para type safety
+- validTo aceita string vazia ou formato ISO válido
+- defaultValues incluem valores sensíveis para experiência inicial positiva
+- Badge de calorias atualiza em tempo real sem re-render completo
+
+### Próximos Passos Sugeridos
+
+- Integrar componente em página de criação de dieta (`/dietas/novo`)
+- Integrar em página de edição de dieta (`/dietas/[id]/editar`)
+- Adicionar teste visual com Storybook ou página de teste
+- Implementar testes unitários para cálculo de calorias
+- Conectar onSubmit com tRPC mutation para salvar no banco
