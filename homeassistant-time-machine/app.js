@@ -6,6 +6,9 @@ const yaml = require('js-yaml');
 const cron = require('node-cron');
 const fetch = require('node-fetch');
 const https = require('https');
+const GitManager = require('./git-manager');
+const chokidar = require('chokidar');
+const debounce = require('debounce');
 
 const version = '2.9.270';
 const DEBUG_LOGS = process.env.DEBUG_LOGS === 'true';
@@ -76,6 +79,10 @@ const DATA_DIR = (() => {
 })();
 
 console.log('[data-dir] Using persistent data directory:', DATA_DIR);
+
+// Global Git manager and file watcher instances
+let gitManager = null;
+let fileWatcher = null;
 
 // Log ingress configuration immediately
 console.log('[INIT] INGRESS_ENTRY env var:', process.env.INGRESS_ENTRY || '(not set)');
@@ -529,7 +536,10 @@ app.get('/api/app-settings', async (req, res) => {
 // Save Docker app settings
 app.post('/api/app-settings', async (req, res) => {
   try {
-    const { liveConfigPath, backupFolderPath, textStyle, theme, esphomeEnabled, packagesEnabled } = req.body;
+    const {
+      liveConfigPath, backupFolderPath, textStyle, theme, esphomeEnabled, packagesEnabled,
+      backupMode, fileWatchingEnabled, fileWatchingDebounce, watchedPaths
+    } = req.body;
 
     const existingSettings = await loadDockerSettings();
     const settings = {
@@ -539,6 +549,11 @@ app.post('/api/app-settings', async (req, res) => {
       theme: theme || existingSettings.theme || 'dark',
       esphomeEnabled: typeof esphomeEnabled === 'boolean' ? esphomeEnabled : existingSettings.esphomeEnabled ?? false,
       packagesEnabled: typeof packagesEnabled === 'boolean' ? packagesEnabled : existingSettings.packagesEnabled ?? false,
+      // Git-based backup settings
+      backupMode: backupMode || existingSettings.backupMode || 'folder',
+      fileWatchingEnabled: typeof fileWatchingEnabled === 'boolean' ? fileWatchingEnabled : existingSettings.fileWatchingEnabled ?? false,
+      fileWatchingDebounce: fileWatchingDebounce || existingSettings.fileWatchingDebounce || 60,
+      watchedPaths: watchedPaths || existingSettings.watchedPaths || ['config', 'lovelace', 'esphome', 'packages']
     };
 
     await saveDockerSettings(settings);
@@ -587,6 +602,11 @@ async function loadDockerSettings() {
     theme: process.env.THEME || 'dark',
     esphomeEnabled: false,
     packagesEnabled: false,
+    // Git-based backup settings
+    backupMode: 'folder', // 'git' or 'folder'
+    fileWatchingEnabled: false,
+    fileWatchingDebounce: 60, // seconds
+    watchedPaths: ['config', 'lovelace', 'esphome', 'packages'], // paths to watch
     ...cachedSettings
   };
 
@@ -636,7 +656,12 @@ async function saveDockerSettings(settings) {
     textStyle: settings.textStyle || 'default',
     theme: settings.theme || 'dark',
     esphomeEnabled: settings.esphomeEnabled ?? false,
-    packagesEnabled: settings.packagesEnabled ?? false
+    packagesEnabled: settings.packagesEnabled ?? false,
+    // Git-based backup settings
+    backupMode: settings.backupMode || 'folder',
+    fileWatchingEnabled: settings.fileWatchingEnabled ?? false,
+    fileWatchingDebounce: settings.fileWatchingDebounce || 60,
+    watchedPaths: settings.watchedPaths || ['config', 'lovelace', 'esphome', 'packages']
   };
   
   // Save to file
@@ -654,6 +679,133 @@ async function saveDockerSettings(settings) {
   global.dockerSettings = settingsToSave;
   
   return settingsToSave;
+}
+
+/**
+ * Initialize Git repository for backups
+ */
+async function initializeGitBackup() {
+  try {
+    const settings = await loadDockerSettings();
+
+    if (settings.backupMode !== 'git') {
+      console.log('[git] Git mode not enabled, skipping Git initialization');
+      return;
+    }
+
+    const backupPath = settings.backupFolderPath || '/media/timemachine';
+    console.log(`[git] Initializing Git repository at ${backupPath}`);
+
+    gitManager = new GitManager(backupPath);
+    const result = await gitManager.initGitRepo();
+
+    if (result.success) {
+      console.log(`[git] ${result.message}`);
+    } else {
+      console.error(`[git] Failed to initialize repository: ${result.message}`);
+    }
+  } catch (error) {
+    console.error('[git] Error during Git initialization:', error);
+  }
+}
+
+/**
+ * Setup file watcher for auto-backup
+ */
+async function setupFileWatcher() {
+  try {
+    const settings = await loadDockerSettings();
+
+    // Stop existing watcher if any
+    if (fileWatcher) {
+      await fileWatcher.close();
+      fileWatcher = null;
+      console.log('[file-watcher] Stopped existing file watcher');
+    }
+
+    // Only setup if file watching is enabled and in Git mode
+    if (!settings.fileWatchingEnabled || settings.backupMode !== 'git') {
+      console.log('[file-watcher] File watching not enabled or not in Git mode');
+      return;
+    }
+
+    if (!gitManager) {
+      console.error('[file-watcher] Git manager not initialized, cannot setup file watcher');
+      return;
+    }
+
+    const liveConfigPath = settings.liveConfigPath || '/config';
+    const watchedPaths = settings.watchedPaths || ['config', 'lovelace', 'esphome', 'packages'];
+    const debounceTime = (settings.fileWatchingDebounce || 60) * 1000; // Convert to milliseconds
+
+    // Build watch patterns
+    const patterns = [];
+    if (watchedPaths.includes('config')) {
+      patterns.push(`${liveConfigPath}/*.yaml`);
+      patterns.push(`${liveConfigPath}/*.yml`);
+    }
+    if (watchedPaths.includes('lovelace')) {
+      patterns.push(`${liveConfigPath}/.storage/lovelace*`);
+    }
+    if (watchedPaths.includes('esphome')) {
+      patterns.push(`${liveConfigPath}/esphome/**/*.yaml`);
+    }
+    if (watchedPaths.includes('packages')) {
+      patterns.push(`${liveConfigPath}/packages/**/*.yaml`);
+    }
+
+    console.log(`[file-watcher] Setting up file watcher with ${debounceTime / 1000}s debounce`);
+    console.log(`[file-watcher] Watching patterns:`, patterns);
+
+    // Create debounced auto-backup function
+    const debouncedAutoBackup = debounce(async (changedFile) => {
+      console.log(`[file-watcher] Change detected: ${changedFile}`);
+
+      try {
+        // Copy changed file to Git repo
+        const backupPath = settings.backupFolderPath || '/media/timemachine';
+        const relativePath = path.relative(liveConfigPath, changedFile);
+        const destPath = path.join(backupPath, relativePath);
+
+        // Ensure destination directory exists
+        await fs.mkdir(path.dirname(destPath), { recursive: true });
+
+        // Copy file
+        await fs.copyFile(changedFile, destPath);
+        console.log(`[file-watcher] Copied ${changedFile} to ${destPath}`);
+
+        // Create Git commit
+        const result = await gitManager.performGitBackup('autosave', changedFile);
+        if (result.success) {
+          console.log(`[file-watcher] ${result.message} (${result.tag})`);
+        } else {
+          console.error(`[file-watcher] Auto-backup failed: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('[file-watcher] Error during auto-backup:', error);
+      }
+    }, debounceTime);
+
+    // Setup file watcher
+    fileWatcher = chokidar.watch(patterns, {
+      ignored: /(^|[\/\\])\../, // ignore dotfiles except .storage
+      persistent: true,
+      ignoreInitial: true, // Don't trigger on initial scan
+      awaitWriteFinish: {
+        stabilityThreshold: 1000, // Wait 1s for file to stabilize
+        pollInterval: 100
+      }
+    });
+
+    fileWatcher
+      .on('change', debouncedAutoBackup)
+      .on('add', debouncedAutoBackup)
+      .on('error', error => console.error('[file-watcher] Watcher error:', error));
+
+    console.log('[file-watcher] File watcher started successfully');
+  } catch (error) {
+    console.error('[file-watcher] Error setting up file watcher:', error);
+  }
 }
 
 const SKIP_BACKUP_DIRS = new Set(['esphome', '.storage', 'packages']);
@@ -718,28 +870,123 @@ app.post('/api/scan-backups', async (req, res) => {
     // Accept backupRootPath from request body or use default
     const backupRootPath = req.body?.backupRootPath || '/media/timemachine';
     console.log('[scan-backups] Scanning backup directory:', backupRootPath);
-    
+
     // Basic security check
     if (backupRootPath.includes('..')) {
       return res.status(400).json({ error: 'Invalid path' });
     }
-    
+
+    // Check if Git mode is enabled
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    if (backupMode === 'git') {
+      // Git mode: List commits instead of folders
+      console.log('[scan-backups] Using Git mode to list backups');
+
+      if (!gitManager) {
+        return res.status(500).json({ error: 'Git manager not initialized' });
+      }
+
+      const commits = await gitManager.listGitCommits();
+
+      // Transform commits to match the expected backup format
+      const backups = commits.map(commit => ({
+        hash: commit.hash,
+        folderName: commit.message, // Use message as display name
+        date: commit.date,
+        type: commit.type, // 'scheduled' or 'autosave'
+        tags: commit.tags,
+        // For backwards compatibility with frontend expecting 'path'
+        path: commit.hash
+      }));
+
+      console.log('[scan-backups] Found Git commits:', backups.length);
+      return res.json({ backups, mode: 'git' });
+    }
+
+    // Folder mode: Traditional backup scanning
+    console.log('[scan-backups] Using folder mode to list backups');
     const backups = await getBackupDirs(backupRootPath);
-    
+
     // Sort descending to show newest first
     backups.sort((a, b) => b.folderName.localeCompare(a.folderName));
-    
+
     console.log('[scan-backups] Found backups:', backups.length);
-    res.json({ backups });
+    res.json({ backups, mode: 'folder' });
   } catch (error) {
     console.error('[scan-backups] Error:', error);
     if (error.code === 'ENOENT') {
-      return res.status(404).json({ 
-        error: `Directory not found: ${error.path}`, 
-        code: 'DIR_NOT_FOUND' 
+      return res.status(404).json({
+        error: `Directory not found: ${error.path}`,
+        code: 'DIR_NOT_FOUND'
       });
     }
     res.status(500).json({ error: 'Failed to scan backup directory.', details: error.message });
+  }
+});
+
+// Get Git diff for a commit
+app.post('/api/git-diff', async (req, res) => {
+  try {
+    const { commitHash, filePath } = req.body;
+
+    if (!commitHash) {
+      return res.status(400).json({ error: 'Commit hash is required' });
+    }
+
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    if (backupMode !== 'git') {
+      return res.status(400).json({ error: 'Git mode is not enabled' });
+    }
+
+    if (!gitManager) {
+      return res.status(500).json({ error: 'Git manager not initialized' });
+    }
+
+    console.log(`[git-diff] Getting diff for commit ${commitHash}, file: ${filePath || 'all'}`);
+    const result = await gitManager.getGitDiff(commitHash, filePath);
+
+    if (result.success) {
+      res.json({ diff: result.diff });
+    } else {
+      res.status(500).json({ error: result.message });
+    }
+  } catch (error) {
+    console.error('[git-diff] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get files in a specific Git commit
+app.post('/api/git-files', async (req, res) => {
+  try {
+    const { commitHash } = req.body;
+
+    if (!commitHash) {
+      return res.status(400).json({ error: 'Commit hash is required' });
+    }
+
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    if (backupMode !== 'git') {
+      return res.status(400).json({ error: 'Git mode is not enabled' });
+    }
+
+    if (!gitManager) {
+      return res.status(500).json({ error: 'Git manager not initialized' });
+    }
+
+    console.log(`[git-files] Getting files for commit ${commitHash}`);
+    const files = await gitManager.getFilesInCommit(commitHash);
+
+    res.json({ files });
+  } catch (error) {
+    console.error('[git-files] Error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -747,8 +994,30 @@ app.post('/api/scan-backups', async (req, res) => {
 app.post('/api/get-backup-automations', async (req, res) => {
   try {
     const { backupPath } = req.body;
-    const automationsFile = path.join(backupPath, 'automations.yaml');
-    const content = await fs.readFile(automationsFile, 'utf-8');
+
+    // Check if Git mode is enabled
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    let content;
+
+    if (backupMode === 'git') {
+      // In Git mode, backupPath is actually a commit hash
+      const commitHash = backupPath;
+      console.log(`[get-backup-automations] Reading from Git commit: ${commitHash}`);
+
+      if (!gitManager) {
+        return res.status(500).json({ error: 'Git manager not initialized' });
+      }
+
+      // Use git show to read file content from commit
+      content = await gitManager.git.show([`${commitHash}:automations.yaml`]);
+    } else {
+      // Folder mode: Read from file system
+      const automationsFile = path.join(backupPath, 'automations.yaml');
+      content = await fs.readFile(automationsFile, 'utf-8');
+    }
+
     const automations = yaml.load(content) || [];
     res.json({ automations });
   } catch (error) {
@@ -757,14 +1026,36 @@ app.post('/api/get-backup-automations', async (req, res) => {
   }
 });
 
-// Get backup scripts  
+// Get backup scripts
 app.post('/api/get-backup-scripts', async (req, res) => {
   try {
     const { backupPath } = req.body;
-    const scriptsFile = path.join(backupPath, 'scripts.yaml');
-    const content = await fs.readFile(scriptsFile, 'utf-8');
+
+    // Check if Git mode is enabled
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    let content;
+
+    if (backupMode === 'git') {
+      // In Git mode, backupPath is actually a commit hash
+      const commitHash = backupPath;
+      console.log(`[get-backup-scripts] Reading from Git commit: ${commitHash}`);
+
+      if (!gitManager) {
+        return res.status(500).json({ error: 'Git manager not initialized' });
+      }
+
+      // Use git show to read file content from commit
+      content = await gitManager.git.show([`${commitHash}:scripts.yaml`]);
+    } else {
+      // Folder mode: Read from file system
+      const scriptsFile = path.join(backupPath, 'scripts.yaml');
+      content = await fs.readFile(scriptsFile, 'utf-8');
+    }
+
     const scriptsObject = yaml.load(content);
-    
+
     // Scripts are stored as a dictionary/object, not an array
     // Transform: { script_id: { alias: '...', sequence: [...] } }
     // Into: [{ id: 'script_id', alias: '...', sequence: [...] }]
@@ -778,7 +1069,7 @@ app.post('/api/get-backup-scripts', async (req, res) => {
       // Fallback for array format (shouldn't happen)
       scripts = scriptsObject;
     }
-    
+
     res.json({ scripts });
   } catch (error) {
     console.error('[get-backup-scripts] Error:', error);
@@ -1292,11 +1583,166 @@ app.post('/api/validate-path', async (req, res) => {
   }
 });
 
+/**
+ * Perform Git-based backup
+ */
+async function performGitBackup(configPath, backupRoot, source, maxBackupsEnabled, maxBackupsCount) {
+  console.log(`[backup-git-${source}] Starting Git-based backup...`);
+
+  if (!gitManager) {
+    console.error('[backup-git] GitManager not initialized!');
+    throw new Error('Git manager not initialized. Please check configuration.');
+  }
+
+  const esphomeEnabled = await isEsphomeEnabled();
+  const packagesEnabled = await isPackagesEnabled();
+
+  // Step 1: Copy files from /config to Git repository
+  console.log(`[backup-git-${source}] Syncing files to Git repository...`);
+
+  // Copy YAML files from config root
+  const files = await fs.readdir(configPath);
+  const yamlFiles = files.filter(file => file.endsWith('.yaml') || file.endsWith('.yml'));
+  console.log(`[backup-git-${source}] Found ${yamlFiles.length} YAML files to sync.`);
+
+  let copiedYamlCount = 0;
+  for (const file of yamlFiles) {
+    const sourcePath = path.join(configPath, file);
+    const destPath = path.join(backupRoot, file);
+    try {
+      await fs.copyFile(sourcePath, destPath);
+      copiedYamlCount++;
+    } catch (err) {
+      console.error(`[backup-git-${source}] Error copying ${file}:`, err.message);
+    }
+  }
+  console.log(`[backup-git-${source}] Synced ${copiedYamlCount} of ${yamlFiles.length} YAML files.`);
+
+  // Copy Lovelace files
+  const storagePath = path.join(configPath, '.storage');
+  const backupStoragePath = path.join(backupRoot, '.storage');
+  await fs.mkdir(backupStoragePath, { recursive: true });
+
+  try {
+    const storageFiles = await fs.readdir(storagePath);
+    const lovelaceFiles = storageFiles.filter(file => file.startsWith('lovelace'));
+    console.log(`[backup-git-${source}] Found ${lovelaceFiles.length} Lovelace files to sync.`);
+
+    let copiedLovelaceCount = 0;
+    for (const file of lovelaceFiles) {
+      const sourcePath = path.join(storagePath, file);
+      const destPath = path.join(backupStoragePath, file);
+      try {
+        await fs.copyFile(sourcePath, destPath);
+        copiedLovelaceCount++;
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+          console.error(`[backup-git-${source}] Error copying Lovelace file ${file}:`, err.message);
+        }
+      }
+    }
+    console.log(`[backup-git-${source}] Synced ${copiedLovelaceCount} of ${lovelaceFiles.length} Lovelace files.`);
+  } catch (err) {
+    console.error(`[backup-git-${source}] Error reading .storage directory:`, err.message);
+  }
+
+  // Copy ESPHome files if enabled
+  if (esphomeEnabled) {
+    const esphomePath = path.join(configPath, 'esphome');
+    const backupEsphomePath = path.join(backupRoot, 'esphome');
+
+    try {
+      await fs.mkdir(backupEsphomePath, { recursive: true });
+      const esphomeYamlFiles = await listYamlFilesRecursive(esphomePath);
+      console.log(`[backup-git-${source}] Found ${esphomeYamlFiles.length} ESPHome YAML files to sync.`);
+
+      let copiedEsphomeCount = 0;
+      for (const relativePath of esphomeYamlFiles) {
+        const sourcePath = path.join(esphomePath, relativePath);
+        const destPath = path.join(backupEsphomePath, relativePath);
+        try {
+          await fs.mkdir(path.dirname(destPath), { recursive: true });
+          await fs.copyFile(sourcePath, destPath);
+          copiedEsphomeCount++;
+        } catch (err) {
+          if (err.code !== 'ENOENT') {
+            console.error(`[backup-git-${source}] Error copying ESPHome file ${relativePath}:`, err.message);
+          }
+        }
+      }
+      console.log(`[backup-git-${source}] Synced ${copiedEsphomeCount} of ${esphomeYamlFiles.length} ESPHome YAML files.`);
+    } catch (err) {
+      console.error(`[backup-git-${source}] Error reading esphome directory:`, err.message);
+    }
+  } else {
+    console.log(`[backup-git-${source}] Skipping ESPHome backups (feature disabled).`);
+  }
+
+  // Copy Packages files if enabled
+  if (packagesEnabled) {
+    const packagesPath = path.join(configPath, 'packages');
+    const backupPackagesPath = path.join(backupRoot, 'packages');
+
+    try {
+      await fs.mkdir(backupPackagesPath, { recursive: true });
+      const packagesYamlFiles = await listYamlFilesRecursive(packagesPath);
+      console.log(`[backup-git-${source}] Found ${packagesYamlFiles.length} Packages YAML files to sync.`);
+
+      let copiedPackagesCount = 0;
+      for (const relativePath of packagesYamlFiles) {
+        const sourcePath = path.join(packagesPath, relativePath);
+        const destPath = path.join(backupPackagesPath, relativePath);
+        try {
+          await fs.mkdir(path.dirname(destPath), { recursive: true });
+          await fs.copyFile(sourcePath, destPath);
+          copiedPackagesCount++;
+        } catch (err) {
+          if (err.code !== 'ENOENT') {
+            console.error(`[backup-git-${source}] Error copying Packages file ${relativePath}:`, err.message);
+          }
+        }
+      }
+      console.log(`[backup-git-${source}] Synced ${copiedPackagesCount} of ${packagesYamlFiles.length} Packages YAML files.`);
+    } catch (err) {
+      console.error(`[backup-git-${source}] Error reading packages directory:`, err.message);
+    }
+  } else {
+    console.log(`[backup-git-${source}] Skipping Packages backups (feature disabled).`);
+  }
+
+  // Step 2: Create Git commit
+  const backupType = source === 'manual' || source === 'scheduled' ? 'scheduled' : 'scheduled';
+  const result = await gitManager.performGitBackup(backupType, null);
+
+  if (!result.success) {
+    console.error(`[backup-git-${source}] Git backup failed: ${result.message}`);
+    throw new Error(result.message);
+  }
+
+  console.log(`[backup-git-${source}] Git backup completed successfully: ${result.message}`);
+
+  // Step 3: Cleanup old backups if enabled
+  if (maxBackupsEnabled && maxBackupsCount > 0) {
+    try {
+      console.log(`[backup-git-${source}] Cleaning up old backups, keeping max ${maxBackupsCount}...`);
+      const cleanupResult = await gitManager.cleanupGitBackups(maxBackupsCount);
+      if (cleanupResult.success) {
+        console.log(`[backup-git-${source}] ${cleanupResult.message}`);
+      }
+    } catch (cleanupError) {
+      console.error(`[backup-git-${source}] Error during cleanup:`, cleanupError.message);
+      // Don't fail the backup if cleanup fails
+    }
+  }
+
+  return backupRoot; // Return repo path instead of timestamped folder
+}
+
 // Reusable backup function
 async function performBackup(liveConfigPath, backupFolderPath, source = 'manual', maxBackupsEnabled = false, maxBackupsCount = 100, timezone = null) {
   const configPath = liveConfigPath || '/config';
   const backupRoot = backupFolderPath || '/media/timemachine';
-  
+
   console.log(`[backup-${source}] Starting backup...`);
   console.log(`[backup-${source}] Config path:`, configPath);
   console.log(`[backup-${source}] Backup root:`, backupRoot);
@@ -1328,6 +1774,16 @@ async function performBackup(liveConfigPath, backupFolderPath, source = 'manual'
       throw accessError;
     }
   }
+
+  // Check backup mode - Git or traditional folder-based
+  const settings = await loadDockerSettings();
+  const backupMode = settings.backupMode || 'folder';
+
+  if (backupMode === 'git') {
+    return await performGitBackup(configPath, backupRoot, source, maxBackupsEnabled, maxBackupsCount);
+  }
+
+  // Traditional folder-based backup continues below...
 
   // Create backup folder with timestamp
   let now = new Date();
@@ -1884,7 +2340,18 @@ app.listen(PORT, HOST, () => {
   }
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('='.repeat(60));
-  
+
+  // Initialize Git-based backup system
+  initializeGitBackup().then(() => {
+    console.log('[init] Git initialization complete');
+    // Setup file watcher after Git is initialized
+    return setupFileWatcher();
+  }).then(() => {
+    console.log('[init] File watcher setup complete');
+  }).catch(error => {
+    console.error('[init] Error during initialization:', error);
+  });
+
   // Initialize scheduled jobs
   loadScheduledJobs().then(jobs => {
     console.log('[scheduler] Loaded schedules:', jobs.jobs);
