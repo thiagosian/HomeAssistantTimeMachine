@@ -545,6 +545,12 @@
         const response = await fetch(url('/api/app-settings'));
         if (response.ok) {
           haConfig = await response.json();
+          console.log('[loadAppSettings] Received haConfig from server:', {
+            backupMode: haConfig.backupMode,
+            fileWatchingEnabled: haConfig.fileWatchingEnabled,
+            fileWatchingDebounce: haConfig.fileWatchingDebounce,
+            watchedPaths: haConfig.watchedPaths
+          });
           await waitForStrings();
           currentTextStyle = haConfig?.textStyle || 'default';
           applyTheme(haConfig?.theme);
@@ -1831,9 +1837,15 @@
         document.getElementById('backupFolderPath').value = haConfig.backupFolderPath || '/media/backups/yaml';
 
         // Load Git mode settings
+        console.log('[Settings UI] Loading Git settings from haConfig:', {
+          backupMode: haConfig.backupMode,
+          fileWatchingEnabled: haConfig.fileWatchingEnabled,
+          fileWatchingDebounce: haConfig.fileWatchingDebounce
+        });
         document.getElementById('backupMode').value = haConfig.backupMode || 'folder';
         document.getElementById('fileWatchingEnabled').checked = haConfig.fileWatchingEnabled || false;
         document.getElementById('fileWatchingDebounce').value = haConfig.fileWatchingDebounce || 60;
+        console.log('[Settings UI] After setting, select value is:', document.getElementById('backupMode').value);
 
         // Show/hide Git settings based on backup mode
         const gitModeSettings = document.getElementById('gitModeSettings');

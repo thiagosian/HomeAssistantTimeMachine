@@ -513,6 +513,12 @@ app.get('/api/app-settings', async (req, res) => {
         watchedPaths: mergedSettings.watchedPaths,
       };
       debugLog('[app-settings] Addon mode: Final response payload:', { esphomeEnabled: finalResponse.esphomeEnabled });
+      console.log('[app-settings-GET] Addon mode - Sending response with Git settings:', {
+        backupMode: finalResponse.backupMode,
+        fileWatchingEnabled: finalResponse.fileWatchingEnabled,
+        fileWatchingDebounce: finalResponse.fileWatchingDebounce,
+        watchedPaths: finalResponse.watchedPaths
+      });
       debugLog('[app-settings] --- End ESPHome Flag Resolution ---');
       res.json(finalResponse);
       return;
@@ -541,6 +547,12 @@ app.get('/api/app-settings', async (req, res) => {
       watchedPaths: dockerSettings.watchedPaths || ['config', 'lovelace', 'esphome', 'packages'],
     };
     debugLog('[app-settings] Docker mode: Final response payload:', { esphomeEnabled: finalResponse.esphomeEnabled });
+    console.log('[app-settings-GET] Docker mode - Sending response with Git settings:', {
+      backupMode: finalResponse.backupMode,
+      fileWatchingEnabled: finalResponse.fileWatchingEnabled,
+      fileWatchingDebounce: finalResponse.fileWatchingDebounce,
+      watchedPaths: finalResponse.watchedPaths
+    });
     debugLog('[app-settings] --- End ESPHome Flag Resolution ---');
     res.json(finalResponse);
   } catch (error) {
@@ -598,9 +610,11 @@ app.post('/api/app-settings', async (req, res) => {
       try {
         // Initialize Git Manager if it's not initialized yet
         if (!gitManager) {
-          console.log('[save-docker-settings] Git Manager not initialized, initializing now...');
+          console.log('[save-docker-settings] ⚠️  Git Manager not initialized, initializing now...');
           await initializeGitBackup();
-          console.log('[save-docker-settings] Git Manager initialized successfully');
+          console.log('[save-docker-settings] ✓ Git Manager initialized successfully, gitManager =', !!gitManager);
+        } else {
+          console.log('[save-docker-settings] ✓ Git Manager already initialized');
         }
 
         // Stop existing watcher if any
@@ -767,8 +781,10 @@ async function initializeGitBackup() {
 
     if (result.success) {
       console.log(`[git] ${result.message}`);
+      console.log('[git] ✓ GitManager is now initialized and ready');
     } else {
       console.error(`[git] Failed to initialize repository: ${result.message}`);
+      console.error('[git] ✗ GitManager initialization failed');
     }
   } catch (error) {
     console.error('[git] Error during Git initialization:', error);
