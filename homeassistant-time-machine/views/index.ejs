@@ -1761,9 +1761,16 @@
 
         if (tabType === 'files') {
           // Switch to Files mode
+          console.log('[DEBUG] Files tab clicked');
           document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
-          document.getElementById('subtabs').classList.add('hidden');
+          console.log('[DEBUG] About to add hidden class to subtabs');
+          const subtabsEl = document.getElementById('subtabs');
+          console.log('[DEBUG] subtabs element:', subtabsEl, 'classes before:', subtabsEl ? subtabsEl.className : 'NULL');
+          if (subtabsEl) {
+            subtabsEl.classList.add('hidden');
+            console.log('[DEBUG] classes after:', subtabsEl.className);
+          }
           document.getElementById('standardContent').style.display = 'none';
           document.getElementById('filesContent').style.display = 'grid';
           currentMode = 'files';
