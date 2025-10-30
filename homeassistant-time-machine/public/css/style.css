@@ -1,3 +1,24 @@
+/* CSS Variables for Files Tab */
+:root[data-theme="dark"] {
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --primary-color: #007AFF;
+  --primary-color-hover: #0051D5;
+  --text-secondary: #9ca3af;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --panel-bg: #1a1a1a;
+  --code-bg: #1a1a1a;
+}
+
+:root[data-theme="light"] {
+  --hover-bg: rgba(0, 0, 0, 0.05);
+  --primary-color: #007AFF;
+  --primary-color-hover: #0051D5;
+  --text-secondary: #6b7280;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --panel-bg: #ffffff;
+  --code-bg: #f8f9fa;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -163,6 +184,69 @@ body[data-theme='light'] .tab {
 
 body[data-theme='light'] .tab.active {
   color: white;
+}
+
+/* Chevron rotation animation */
+.tab-chevron {
+  transition: transform 0.3s ease;
+}
+
+.tab.active .tab-chevron {
+  transform: rotate(180deg);
+}
+
+/* Subtabs */
+.subtabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  margin-left: 4px;
+  flex-wrap: wrap;
+}
+
+.subtabs.hidden {
+  display: none;
+}
+
+.subtab {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.03);
+  color: #A2A2A2;
+  transition: all 0.2s ease;
+  height: auto;
+}
+
+body[data-theme='light'] .subtab {
+  background-color: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #475569;
+}
+
+.subtab:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+body[data-theme='light'] .subtab:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.subtab.active {
+  background-color: rgba(0, 122, 255, 0.15);
+  color: #007AFF;
+  border-color: rgba(0, 122, 255, 0.3);
+}
+
+body[data-theme='light'] .subtab.active {
+  background-color: rgba(0, 122, 255, 0.1);
+  color: #007AFF;
+  border-color: rgba(0, 122, 255, 0.25);
 }
 
 .content {

@@ -235,17 +235,26 @@
     </header>
 
     <div class="tabs">
-      <button class="tab active" data-tab="automations" id="automationsTab">Automations</button>
-      <button class="tab" data-tab="scripts" id="scriptsTab">Scripts</button>
-      <button class="tab" data-tab="lovelace" id="lovelaceTab">Lovelace</button>
-      <button class="tab" data-tab="esphome" id="esphomeTab" <% if (!esphomeEnabled) { %>style="display: none;"<% } %>>ESPHome</button>
-      <button class="tab" data-tab="packages" id="packagesTab" <% if (!packagesEnabled) { %>style="display: none;"<% } %>>Packages</button>
       <button class="tab" data-tab="files" id="filesTab">
         <svg style="width: 16px; height: 16px; margin-right: 6px; vertical-align: -2px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
         Files
       </button>
+      <button class="tab active" data-tab="backups" id="backupsTab">
+        Backups
+        <svg class="tab-chevron" style="width: 14px; height: 14px; margin-left: 6px; vertical-align: -2px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="subtabs" id="subtabs">
+      <button class="subtab active" data-tab="automations" id="automationsTab">Automations</button>
+      <button class="subtab" data-tab="scripts" id="scriptsTab">Scripts</button>
+      <button class="subtab" data-tab="lovelace" id="lovelaceTab">Lovelace</button>
+      <button class="subtab" data-tab="esphome" id="esphomeTab" <% if (!esphomeEnabled) { %>style="display: none;"<% } %>>ESPHome</button>
+      <button class="subtab" data-tab="packages" id="packagesTab" <% if (!packagesEnabled) { %>style="display: none;"<% } %>>Packages</button>
     </div>
 
     <!-- Standard 2-panel layout for backups -->
@@ -1745,10 +1754,47 @@
       }
     });
 
-    // Tab switching
+    // Main tab switching (Files vs Backups)
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
-        const newMode = tab.dataset.tab;
+        const tabType = tab.dataset.tab;
+
+        if (tabType === 'files') {
+          // Switch to Files mode
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById('subtabs').classList.add('hidden');
+          document.getElementById('standardContent').style.display = 'none';
+          document.getElementById('filesContent').style.display = 'grid';
+          currentMode = 'files';
+          loadFileTree();
+        } else if (tabType === 'backups') {
+          // Switch to Backups mode (show subtabs)
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById('subtabs').classList.remove('hidden');
+          document.getElementById('standardContent').style.display = 'grid';
+          document.getElementById('filesContent').style.display = 'none';
+
+          // Keep the currently selected subtab active (or default to automations)
+          const activeSubtab = document.querySelector('.subtab.active');
+          if (activeSubtab) {
+            currentMode = activeSubtab.dataset.tab;
+          } else {
+            currentMode = 'automations';
+            document.getElementById('automationsTab').classList.add('active');
+          }
+
+          // Load content for the active subtab
+          loadSubtabContent(currentMode);
+        }
+      });
+    });
+
+    // Subtab switching
+    document.querySelectorAll('.subtab').forEach(subtab => {
+      subtab.addEventListener('click', () => {
+        const newMode = subtab.dataset.tab;
         if (newMode === currentMode) return;
 
         if (newMode === 'esphome' && !esphomeFeatureEnabled) {
@@ -1761,51 +1807,46 @@
           return;
         }
 
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
+        document.querySelectorAll('.subtab').forEach(t => t.classList.remove('active'));
+        subtab.classList.add('active');
         currentMode = newMode;
 
-        // Toggle between standard and files layout
-        if (currentMode === 'files') {
-          document.getElementById('standardContent').style.display = 'none';
-          document.getElementById('filesContent').style.display = 'grid';
-          loadFileTree();
-        } else {
-          document.getElementById('standardContent').style.display = 'grid';
-          document.getElementById('filesContent').style.display = 'none';
-
-          // Reset items state
-          allItems = [];
-          liveItemsMap = {};
-          itemStatuses = {};
-
-          // Update search placeholder
-          updatePlaceholders();
-
-          // Update title
-          document.getElementById('itemsTitle').textContent = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
-
-          if (currentBackupPath && currentMode !== 'lovelace' && currentMode !== 'esphome' && currentMode !== 'packages') {
-            loadBackupItems();
-          } else if (currentMode === 'lovelace' && currentBackupPath) {
-            loadLovelaceFiles();
-          } else if (currentMode === 'esphome' && currentBackupPath) {
-            loadEsphomeFiles();
-          } else if (currentMode === 'packages' && currentBackupPath) {
-            loadPackagesFiles();
-          } else {
-            // Show empty state based on mode
-            const modeLabel = currentMode === 'lovelace'
-              ? 'lovelace files'
-              : currentMode === 'esphome'
-                ? 'ESPHome files'
-                : currentMode;
-            const emptyMessage = 'Select a backup to view ' + modeLabel;
-            document.getElementById('itemsList').innerHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;"><div style="width: 64px; height: 64px; background-color: rgba(255, 255, 255, 0.05); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;"><svg style="width: 32px; height: 32px; color: #6b7280;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0112.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg></div><p style="color: #9ca3af;">${emptyMessage}</p></div>`;
-          }
-        }
+        loadSubtabContent(currentMode);
       });
     });
+
+    // Helper function to load subtab content
+    function loadSubtabContent(mode) {
+      // Reset items state
+      allItems = [];
+      liveItemsMap = {};
+      itemStatuses = {};
+
+      // Update search placeholder
+      updatePlaceholders();
+
+      // Update title
+      document.getElementById('itemsTitle').textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
+
+      if (currentBackupPath && mode !== 'lovelace' && mode !== 'esphome' && mode !== 'packages') {
+        loadBackupItems();
+      } else if (mode === 'lovelace' && currentBackupPath) {
+        loadLovelaceFiles();
+      } else if (mode === 'esphome' && currentBackupPath) {
+        loadEsphomeFiles();
+      } else if (mode === 'packages' && currentBackupPath) {
+        loadPackagesFiles();
+      } else {
+        // Show empty state based on mode
+        const modeLabel = mode === 'lovelace'
+          ? 'lovelace files'
+          : mode === 'esphome'
+            ? 'ESPHome files'
+            : mode;
+        const emptyMessage = 'Select a backup to view ' + modeLabel;
+        document.getElementById('itemsList').innerHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;"><div style="width: 64px; height: 64px; background-color: rgba(255, 255, 255, 0.05); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;"><svg style="width: 32px; height: 32px; color: #6b7280;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0112.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg></div><p style="color: #9ca3af;">${emptyMessage}</p></div>`;
+      }
+    }
 
     document.getElementById('searchBox').addEventListener('input', applyFilters);
     document.getElementById('sortSelect').addEventListener('change', applyFilters);
@@ -2664,7 +2705,7 @@
             treeContainer.innerHTML = `
               <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 24px;">
                 <div class="file-icon-container">
-                  <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="file-icon" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                   </svg>
                 </div>
@@ -2702,7 +2743,7 @@
         treeContainer.innerHTML = `
           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
             <div class="file-icon-container">
-              <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="file-icon" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
             </div>
@@ -2729,10 +2770,10 @@
         folderDiv.className = 'file-tree-folder';
         folderDiv.innerHTML = `
           <span class="file-tree-icon folder-icon">
-            <svg class="folder-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="folder-chevron" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
-            <svg class="folder-svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="folder-svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
           </span>
@@ -2760,7 +2801,7 @@
         fileDiv.dataset.path = node.path;
         fileDiv.innerHTML = `
           <span class="file-tree-icon">
-            <svg class="file-svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="file-svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </span>
@@ -2798,7 +2839,7 @@
       document.getElementById('fileDiffViewer').innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
           <div class="file-icon-container">
-            <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="file-icon" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
@@ -2836,7 +2877,7 @@
         historyContainer.innerHTML = `
           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
             <div class="file-icon-container">
-              <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="file-icon" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -2926,7 +2967,7 @@
         diffContainer.innerHTML = `
           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
             <div class="file-icon-container">
-              <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="file-icon" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
