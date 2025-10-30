@@ -488,6 +488,11 @@ app.get('/api/app-settings', async (req, res) => {
         theme: options.theme || savedSettings.theme || baseResponse.theme || 'dark',
         esphomeEnabled: options.esphome ?? finalEsphomeEnabled,
         packagesEnabled: finalPackagesEnabled,
+        // Git-based backup settings
+        backupMode: savedSettings.backupMode || 'folder',
+        fileWatchingEnabled: savedSettings.fileWatchingEnabled ?? false,
+        fileWatchingDebounce: savedSettings.fileWatchingDebounce || 60,
+        watchedPaths: savedSettings.watchedPaths || ['config', 'lovelace', 'esphome', 'packages'],
       };
 
       global.dockerSettings = { ...global.dockerSettings, ...mergedSettings };
@@ -500,6 +505,12 @@ app.get('/api/app-settings', async (req, res) => {
         textStyle: mergedSettings.textStyle,
         theme: mergedSettings.theme,
         esphomeEnabled: mergedSettings.esphomeEnabled,
+        packagesEnabled: mergedSettings.packagesEnabled,
+        // Git-based backup settings
+        backupMode: mergedSettings.backupMode,
+        fileWatchingEnabled: mergedSettings.fileWatchingEnabled,
+        fileWatchingDebounce: mergedSettings.fileWatchingDebounce,
+        watchedPaths: mergedSettings.watchedPaths,
       };
       debugLog('[app-settings] Addon mode: Final response payload:', { esphomeEnabled: finalResponse.esphomeEnabled });
       debugLog('[app-settings] --- End ESPHome Flag Resolution ---');
@@ -523,6 +534,11 @@ app.get('/api/app-settings', async (req, res) => {
       theme: effectiveTheme,
       esphomeEnabled: finalEsphomeEnabled,
       packagesEnabled: dockerSettings.packagesEnabled ?? false,
+      // Git-based backup settings
+      backupMode: dockerSettings.backupMode || 'folder',
+      fileWatchingEnabled: dockerSettings.fileWatchingEnabled ?? false,
+      fileWatchingDebounce: dockerSettings.fileWatchingDebounce || 60,
+      watchedPaths: dockerSettings.watchedPaths || ['config', 'lovelace', 'esphome', 'packages'],
     };
     debugLog('[app-settings] Docker mode: Final response payload:', { esphomeEnabled: finalResponse.esphomeEnabled });
     debugLog('[app-settings] --- End ESPHome Flag Resolution ---');
@@ -558,7 +574,49 @@ app.post('/api/app-settings', async (req, res) => {
 
     await saveDockerSettings(settings);
     console.log('[save-docker-settings] Saved Docker app settings:', settings);
-    
+
+    // Reinitialize Git Manager if switching to Git mode
+    const previousMode = existingSettings.backupMode || 'folder';
+    const newMode = settings.backupMode;
+
+    if (newMode === 'git' && previousMode !== 'git') {
+      console.log('[save-docker-settings] Backup mode changed to Git, initializing Git Manager...');
+      try {
+        await initializeGitBackup();
+        await setupFileWatcher();
+        console.log('[save-docker-settings] Git Manager and file watcher initialized successfully');
+      } catch (error) {
+        console.error('[save-docker-settings] Failed to initialize Git Manager:', error);
+        return res.status(500).json({
+          error: 'Settings saved, but Git initialization failed: ' + error.message
+        });
+      }
+    } else if (newMode === 'git') {
+      // Already in Git mode, but settings might have changed (e.g., file watching options)
+      console.log('[save-docker-settings] Git mode settings updated, reinitializing file watcher...');
+      try {
+        // Stop existing watcher if any
+        if (fileWatcher) {
+          await fileWatcher.close();
+          fileWatcher = null;
+          console.log('[save-docker-settings] Stopped existing file watcher');
+        }
+        // Reinitialize with new settings
+        await setupFileWatcher();
+        console.log('[save-docker-settings] File watcher reinitialized with new settings');
+      } catch (error) {
+        console.error('[save-docker-settings] Failed to reinitialize file watcher:', error);
+      }
+    } else if (previousMode === 'git' && newMode === 'folder') {
+      // Switching from Git to Folder mode
+      console.log('[save-docker-settings] Backup mode changed to Folder, stopping file watcher...');
+      if (fileWatcher) {
+        await fileWatcher.close();
+        fileWatcher = null;
+        console.log('[save-docker-settings] File watcher stopped');
+      }
+    }
+
     res.json({ success: true, message: 'Settings saved successfully' });
   } catch (error) {
     console.error('[save-docker-settings] Error:', error);
