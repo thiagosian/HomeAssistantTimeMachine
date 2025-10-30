@@ -133,8 +133,6 @@ This add-on relies on having file-based backups of your Home Assistant configura
 
 > **Important:** The paths in this script (for example, `/homeassistant`) are placeholders. Adjust them to match your actual Home Assistant configuration directory (such as `/config` on HAOS).
 
-> **Important:** The paths in this script (for example, `/homeassistant`) are placeholders. Adjust them to match your actual Home Assistant configuration directory (such as `/config` on HAOS).
-
 ```bash
 #!/bin/bash
 
