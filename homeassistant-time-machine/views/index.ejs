@@ -240,9 +240,16 @@
       <button class="tab" data-tab="lovelace" id="lovelaceTab">Lovelace</button>
       <button class="tab" data-tab="esphome" id="esphomeTab" <% if (!esphomeEnabled) { %>style="display: none;"<% } %>>ESPHome</button>
       <button class="tab" data-tab="packages" id="packagesTab" <% if (!packagesEnabled) { %>style="display: none;"<% } %>>Packages</button>
+      <button class="tab" data-tab="files" id="filesTab">
+        <svg style="width: 16px; height: 16px; margin-right: 6px; vertical-align: -2px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+        Files
+      </button>
     </div>
 
-    <div class="content">
+    <!-- Standard 2-panel layout for backups -->
+    <div class="content" id="standardContent">
       <div class="panel">
         <div class="panel-header">
           <div class="panel-header-info">
@@ -289,6 +296,59 @@
         </div>
       </div>
     </div>
+
+    <!-- Files 3-panel layout -->
+    <div class="files-content" id="filesContent" style="display: none;">
+      <div class="panel panel--files">
+        <div class="panel-header">
+          <div class="panel-header-info">
+            <h2>File Tree</h2>
+            <p id="fileTreeCount">Loading...</p>
+          </div>
+        </div>
+        <div id="fileTree" class="file-tree">
+          <p class="loading">Loading file tree...</p>
+        </div>
+      </div>
+
+      <div class="panel panel--files">
+        <div class="panel-header">
+          <div class="panel-header-info">
+            <h2 id="fileHistoryTitle">Select a file</h2>
+            <p id="fileHistoryCount"></p>
+          </div>
+        </div>
+        <div id="fileHistory" class="file-history">
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+            <div class="file-icon-container">
+              <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p class="empty-state-message">Select a file to view its history</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel--files">
+        <div class="panel-header">
+          <div class="panel-header-info">
+            <h2 id="fileDiffTitle">Select a commit</h2>
+            <p id="fileDiffSubtitle"></p>
+          </div>
+        </div>
+        <div id="fileDiffViewer" class="file-diff">
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+            <div class="file-icon-container">
+              <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p class="empty-state-message">Select a commit to view changes</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -312,6 +372,12 @@
     let currentTheme = document.body.dataset.theme || document.documentElement.dataset.theme || 'dark';
     let esphomeFeatureEnabled = document.body.dataset.esphomeEnabled === 'true';
     let packagesFeatureEnabled = document.body.dataset.packagesEnabled === 'true';
+
+    // Files mode state
+    let fileTreeData = null;
+    let selectedFilePath = null;
+    let selectedCommitHash = null;
+    let fileHistoryData = [];
 
     if (!document.body.dataset.theme) {
       document.body.dataset.theme = currentTheme;
@@ -1698,35 +1764,45 @@
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         currentMode = newMode;
-        
-        // Reset items state
-        allItems = [];
-        liveItemsMap = {};
-        itemStatuses = {};
-        
-        // Update search placeholder
-        updatePlaceholders();
-        
-        // Update title
-        document.getElementById('itemsTitle').textContent = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
-        
-        if (currentBackupPath && currentMode !== 'lovelace' && currentMode !== 'esphome' && currentMode !== 'packages') {
-          loadBackupItems();
-        } else if (currentMode === 'lovelace' && currentBackupPath) {
-          loadLovelaceFiles();
-        } else if (currentMode === 'esphome' && currentBackupPath) {
-          loadEsphomeFiles();
-        } else if (currentMode === 'packages' && currentBackupPath) {
-          loadPackagesFiles();
+
+        // Toggle between standard and files layout
+        if (currentMode === 'files') {
+          document.getElementById('standardContent').style.display = 'none';
+          document.getElementById('filesContent').style.display = 'grid';
+          loadFileTree();
         } else {
-          // Show empty state based on mode
-          const modeLabel = currentMode === 'lovelace'
-            ? 'lovelace files'
-            : currentMode === 'esphome'
-              ? 'ESPHome files'
-              : currentMode;
-          const emptyMessage = 'Select a backup to view ' + modeLabel;
-          document.getElementById('itemsList').innerHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;"><div style="width: 64px; height: 64px; background-color: rgba(255, 255, 255, 0.05); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;"><svg style="width: 32px; height: 32px; color: #6b7280;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0112.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg></div><p style="color: #9ca3af;">${emptyMessage}</p></div>`;
+          document.getElementById('standardContent').style.display = 'grid';
+          document.getElementById('filesContent').style.display = 'none';
+
+          // Reset items state
+          allItems = [];
+          liveItemsMap = {};
+          itemStatuses = {};
+
+          // Update search placeholder
+          updatePlaceholders();
+
+          // Update title
+          document.getElementById('itemsTitle').textContent = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+
+          if (currentBackupPath && currentMode !== 'lovelace' && currentMode !== 'esphome' && currentMode !== 'packages') {
+            loadBackupItems();
+          } else if (currentMode === 'lovelace' && currentBackupPath) {
+            loadLovelaceFiles();
+          } else if (currentMode === 'esphome' && currentBackupPath) {
+            loadEsphomeFiles();
+          } else if (currentMode === 'packages' && currentBackupPath) {
+            loadPackagesFiles();
+          } else {
+            // Show empty state based on mode
+            const modeLabel = currentMode === 'lovelace'
+              ? 'lovelace files'
+              : currentMode === 'esphome'
+                ? 'ESPHome files'
+                : currentMode;
+            const emptyMessage = 'Select a backup to view ' + modeLabel;
+            document.getElementById('itemsList').innerHTML = `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;"><div style="width: 64px; height: 64px; background-color: rgba(255, 255, 255, 0.05); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;"><svg style="width: 32px; height: 32px; color: #6b7280;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0112.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg></div><p style="color: #9ca3af;">${emptyMessage}</p></div>`;
+          }
         }
       });
     });
@@ -2570,11 +2646,323 @@
       return div.innerHTML;
     }
 
+    // ============================================================
+    // FILES MODE FUNCTIONS
+    // ============================================================
+
+    async function loadFileTree() {
+      console.log('[files] Loading file tree...');
+      const treeContainer = document.getElementById('fileTree');
+      treeContainer.innerHTML = '<p class="loading">Loading file tree...</p>';
+
+      try {
+        const response = await fetch(url('/api/git-file-tree'));
+        const data = await response.json();
+
+        if (!response.ok) {
+          if (data.error && data.error.includes('Git mode is not enabled')) {
+            treeContainer.innerHTML = `
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 24px;">
+                <div class="file-icon-container">
+                  <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                </div>
+                <p class="empty-state-message" style="margin-bottom: 8px;">Git mode is not enabled</p>
+                <p style="color: #6b7280; font-size: 14px;">Enable Git mode in Settings to use file navigation</p>
+              </div>
+            `;
+            return;
+          }
+          throw new Error(data.error || 'Failed to load file tree');
+        }
+
+        fileTreeData = data.tree;
+        renderFileTree(data.tree);
+
+        const fileCount = countFiles(data.tree);
+        document.getElementById('fileTreeCount').textContent = `${fileCount} file${fileCount !== 1 ? 's' : ''}`;
+      } catch (error) {
+        console.error('[files] Error loading file tree:', error);
+        treeContainer.innerHTML = `<p style="color: #ef4444; padding: 16px;">Error loading file tree: ${error.message}</p>`;
+      }
+    }
+
+    function countFiles(node) {
+      if (node.type === 'file') return 1;
+      if (!node.children) return 0;
+      return node.children.reduce((sum, child) => sum + countFiles(child), 0);
+    }
+
+    function renderFileTree(tree) {
+      const treeContainer = document.getElementById('fileTree');
+      treeContainer.innerHTML = '';
+
+      if (!tree.children || tree.children.length === 0) {
+        treeContainer.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+            <div class="file-icon-container">
+              <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            </div>
+            <p class="empty-state-message">No files found in repository</p>
+          </div>
+        `;
+        return;
+      }
+
+      const treeList = document.createElement('ul');
+      treeList.className = 'file-tree-list';
+      tree.children.forEach(node => {
+        treeList.appendChild(createTreeNode(node));
+      });
+      treeContainer.appendChild(treeList);
+    }
+
+    function createTreeNode(node) {
+      const li = document.createElement('li');
+      li.className = 'file-tree-item';
+
+      if (node.type === 'folder') {
+        const folderDiv = document.createElement('div');
+        folderDiv.className = 'file-tree-folder';
+        folderDiv.innerHTML = `
+          <span class="file-tree-icon folder-icon">
+            <svg class="folder-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            <svg class="folder-svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+          </span>
+          <span class="file-tree-name">${escapeHtml(node.name)}</span>
+        `;
+
+        folderDiv.addEventListener('click', (e) => {
+          e.stopPropagation();
+          li.classList.toggle('expanded');
+        });
+
+        li.appendChild(folderDiv);
+
+        if (node.children && node.children.length > 0) {
+          const childList = document.createElement('ul');
+          childList.className = 'file-tree-list file-tree-children';
+          node.children.forEach(child => {
+            childList.appendChild(createTreeNode(child));
+          });
+          li.appendChild(childList);
+        }
+      } else {
+        const fileDiv = document.createElement('div');
+        fileDiv.className = 'file-tree-file';
+        fileDiv.dataset.path = node.path;
+        fileDiv.innerHTML = `
+          <span class="file-tree-icon">
+            <svg class="file-svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </span>
+          <span class="file-tree-name">${escapeHtml(node.name)}</span>
+        `;
+
+        fileDiv.addEventListener('click', () => {
+          document.querySelectorAll('.file-tree-file').forEach(f => f.classList.remove('selected'));
+          fileDiv.classList.add('selected');
+          loadFileHistory(node.path, node.name);
+        });
+
+        li.appendChild(fileDiv);
+      }
+
+      return li;
+    }
+
+    async function loadFileHistory(filePath, fileName) {
+      console.log(`[files] Loading history for ${filePath}`);
+      selectedFilePath = filePath;
+      selectedCommitHash = null;
+
+      const historyContainer = document.getElementById('fileHistory');
+      const titleEl = document.getElementById('fileHistoryTitle');
+      const countEl = document.getElementById('fileHistoryCount');
+
+      titleEl.textContent = fileName || filePath;
+      countEl.textContent = 'Loading...';
+      historyContainer.innerHTML = '<p class="loading">Loading file history...</p>';
+
+      // Reset diff viewer
+      document.getElementById('fileDiffTitle').textContent = 'Select a commit';
+      document.getElementById('fileDiffSubtitle').textContent = '';
+      document.getElementById('fileDiffViewer').innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+          <div class="file-icon-container">
+            <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <p class="empty-state-message">Select a commit to view changes</p>
+        </div>
+      `;
+
+      try {
+        const response = await fetch(url('/api/git-file-history'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filePath, limit: 100 })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load file history');
+        }
+
+        fileHistoryData = data.commits;
+        renderFileHistory(data.commits, fileName || filePath);
+        countEl.textContent = `${data.commits.length} commit${data.commits.length !== 1 ? 's' : ''}`;
+      } catch (error) {
+        console.error('[files] Error loading file history:', error);
+        historyContainer.innerHTML = `<p style="color: #ef4444; padding: 16px;">Error loading file history: ${error.message}</p>`;
+        countEl.textContent = '';
+      }
+    }
+
+    function renderFileHistory(commits, fileName) {
+      const historyContainer = document.getElementById('fileHistory');
+
+      if (!commits || commits.length === 0) {
+        historyContainer.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+            <div class="file-icon-container">
+              <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p class="empty-state-message">No history found for this file</p>
+          </div>
+        `;
+        return;
+      }
+
+      historyContainer.innerHTML = '';
+      const timeline = document.createElement('div');
+      timeline.className = 'file-timeline';
+
+      commits.forEach((commit, index) => {
+        const commitEl = document.createElement('div');
+        commitEl.className = 'timeline-commit';
+        commitEl.dataset.hash = commit.hash;
+
+        const date = new Date(commit.date);
+        const formattedDate = date.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        commitEl.innerHTML = `
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="timeline-message">${escapeHtml(commit.message)}</div>
+            <div class="timeline-meta">
+              <span class="timeline-date">${formattedDate}</span>
+              <span class="timeline-hash">${commit.hash.substring(0, 7)}</span>
+            </div>
+          </div>
+        `;
+
+        commitEl.addEventListener('click', () => {
+          document.querySelectorAll('.timeline-commit').forEach(c => c.classList.remove('selected'));
+          commitEl.classList.add('selected');
+          loadFileDiff(commit.hash, selectedFilePath, fileName, commit.message, formattedDate);
+        });
+
+        timeline.appendChild(commitEl);
+      });
+
+      historyContainer.appendChild(timeline);
+    }
+
+    async function loadFileDiff(commitHash, filePath, fileName, commitMessage, commitDate) {
+      console.log(`[files] Loading diff for ${filePath} at ${commitHash}`);
+      selectedCommitHash = commitHash;
+
+      const diffContainer = document.getElementById('fileDiffViewer');
+      const titleEl = document.getElementById('fileDiffTitle');
+      const subtitleEl = document.getElementById('fileDiffSubtitle');
+
+      titleEl.textContent = fileName || filePath;
+      subtitleEl.textContent = commitMessage;
+      diffContainer.innerHTML = '<p class="loading">Loading diff...</p>';
+
+      try {
+        const response = await fetch(url('/api/git-diff'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commitHash, filePath })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load diff');
+        }
+
+        renderFileDiff(data.diff, fileName || filePath, commitDate);
+      } catch (error) {
+        console.error('[files] Error loading diff:', error);
+        diffContainer.innerHTML = `<p style="color: #ef4444; padding: 16px;">Error loading diff: ${error.message}</p>`;
+      }
+    }
+
+    function renderFileDiff(diffText, fileName, commitDate) {
+      const diffContainer = document.getElementById('fileDiffViewer');
+
+      if (!diffText || diffText.trim() === '') {
+        diffContainer.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+            <div class="file-icon-container">
+              <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p class="empty-state-message">No changes in this commit</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Parse and render diff (reuse existing diff rendering logic)
+      const diffHtml = parseDiff(diffText);
+      diffContainer.innerHTML = `
+        <div class="diff-container">
+          <div class="diff-file">
+            <div class="diff-file-header">
+              <svg style="width: 16px; height: 16px; margin-right: 8px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              ${escapeHtml(fileName)}
+            </div>
+            <div class="diff-content">${diffHtml}</div>
+          </div>
+        </div>
+      `;
+
+      // Attach context toggle handlers
+      diffContainer.querySelectorAll('.diff-hunk-toggle').forEach(button => {
+        button.addEventListener('click', () => toggleHunkContext(button));
+      });
+    }
+
     // Include js-yaml for client-side YAML parsing
     const yamlScript = document.createElement('script');
     yamlScript.src = 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js';
     document.head.appendChild(yamlScript);
-    
+
     // Include diff library for line-by-line comparison
     const diffScript = document.createElement('script');
     diffScript.src = 'https://cdn.jsdelivr.net/npm/diff@5.1.0/dist/diff.min.js';
