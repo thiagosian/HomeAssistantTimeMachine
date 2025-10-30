@@ -5,6 +5,7 @@ const fsSync = require('fs');
 const yaml = require('js-yaml');
 const cron = require('node-cron');
 const fetch = require('node-fetch');
+const https = require('https');
 
 const version = '2.9.270';
 const DEBUG_LOGS = process.env.DEBUG_LOGS === 'true';
@@ -12,6 +13,25 @@ const debugLog = (...args) => {
   if (DEBUG_LOGS) {
     console.log(...args);
   }
+};
+
+const TLS_CERT_ERROR_CODES = new Set([
+  'SELF_SIGNED_CERT_IN_CHAIN',
+  'DEPTH_ZERO_SELF_SIGNED_CERT',
+  'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+  'ERR_TLS_CERT_ALTNAME_INVALID',
+  'ERR_TLS_CERT_SIGNATURE_ALGORITHM_UNSUPPORTED',
+]);
+
+const isTlsCertificateError = (error) => {
+  if (!error) return false;
+  if (error.code && TLS_CERT_ERROR_CODES.has(error.code)) {
+    return true;
+  }
+  if (typeof error.message === 'string') {
+    return error.message.includes('self signed certificate') || error.message.includes('unable to verify the first certificate');
+  }
+  return false;
 };
 
 const app = express();
@@ -1066,10 +1086,34 @@ app.post('/api/test-home-assistant-connection', async (req, res) => {
       headers['X-Supervisor-Token'] = auth.token;
     }
 
-    const response = await fetch(`${auth.baseUrl}/states`, { headers });
+    const endpoint = `${auth.baseUrl}/states`;
+    const fetchOptions = { headers };
+    let tlsFallbackUsed = false;
+    let response;
+
+    try {
+      response = await fetch(endpoint, fetchOptions);
+    } catch (fetchError) {
+      if (auth.baseUrl.startsWith('https://') && isTlsCertificateError(fetchError)) {
+        tlsFallbackUsed = true;
+        console.warn('[test-connection] TLS verification failed, retrying with relaxed validation:', {
+          endpoint,
+          code: fetchError.code,
+        });
+        const insecureAgent = new https.Agent({ rejectUnauthorized: false });
+        response = await fetch(endpoint, { ...fetchOptions, agent: insecureAgent });
+      } else {
+        throw fetchError;
+      }
+    }
     
     if (response.ok) {
-      res.json({ success: true, message: 'Connected to Home Assistant successfully.', authMode: auth.source });
+      res.json({
+        success: true,
+        message: 'Connected to Home Assistant successfully.',
+        authMode: auth.source,
+        tlsFallback: tlsFallbackUsed ? 'insecure' : 'strict',
+      });
     } else {
       const errorText = await response.text();
       console.error('[test-connection] HA response error', {
@@ -1080,7 +1124,8 @@ app.post('/api/test-home-assistant-connection', async (req, res) => {
       });
       res.status(response.status).json({ 
         success: false, 
-        message: `Connection failed: ${response.status} - ${errorText}` 
+        message: `Connection failed: ${response.status} - ${errorText}`,
+        tlsFallback: tlsFallbackUsed ? 'insecure' : 'strict',
       });
     }
   } catch (error) {
