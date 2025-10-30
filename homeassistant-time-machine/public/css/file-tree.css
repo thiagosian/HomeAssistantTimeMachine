@@ -1,0 +1,344 @@
+/* ============================================================
+   FILES TAB - THREE PANEL LAYOUT
+   ============================================================ */
+
+.files-content {
+  display: none;
+  grid-template-columns: 300px 1fr 1fr;
+  gap: 16px;
+  height: calc(100vh - 160px);
+  padding: 16px;
+}
+
+@media (min-width: 1400px) {
+  .files-content {
+    grid-template-columns: 350px 1fr 1fr;
+  }
+}
+
+@media (min-width: 1800px) {
+  .files-content {
+    grid-template-columns: 400px 1fr 1fr;
+  }
+}
+
+@media (max-width: 1200px) {
+  .files-content .panel--files:nth-child(2),
+  .files-content .panel--files:nth-child(3) {
+    min-width: 300px;
+  }
+}
+
+.panel--files {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   FILE TREE COMPONENT
+   ============================================================ */
+
+.file-tree {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+}
+
+.file-tree-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.file-tree-item {
+  user-select: none;
+}
+
+.file-tree-children {
+  display: none;
+  padding-left: 20px;
+}
+
+.file-tree-item.expanded > .file-tree-children {
+  display: block;
+}
+
+.file-tree-folder,
+.file-tree-file {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+  gap: 8px;
+}
+
+.file-tree-folder:hover,
+.file-tree-file:hover {
+  background-color: var(--hover-bg);
+}
+
+.file-tree-file.selected {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.file-tree-file.selected:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.file-tree-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+
+.folder-icon {
+  gap: 2px;
+}
+
+.folder-chevron {
+  width: 12px;
+  height: 12px;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+  position: absolute;
+  left: -2px;
+}
+
+.file-tree-item.expanded > div > .folder-icon > .folder-chevron {
+  transform: rotate(90deg);
+}
+
+.folder-svg,
+.file-svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+}
+
+.file-tree-file.selected .file-svg {
+  color: white;
+}
+
+.file-tree-name {
+  flex: 1;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   TIMELINE COMPONENT
+   ============================================================ */
+
+.timeline {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+}
+
+.timeline-commit {
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timeline-commit:hover {
+  background-color: var(--hover-bg);
+}
+
+.timeline-commit.selected {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.timeline-commit.selected:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.timeline-message {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  word-wrap: break-word;
+}
+
+.timeline-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.timeline-commit.selected .timeline-meta {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.timeline-hash {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: var(--hover-bg);
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.timeline-commit.selected .timeline-hash {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.timeline-author,
+.timeline-date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ============================================================
+   FILE DIFF VIEWER
+   ============================================================ */
+
+.file-diff {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.diff-header {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px 8px 0 0;
+}
+
+.diff-path {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--text-secondary);
+  word-wrap: break-word;
+}
+
+.diff-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 12px;
+  background-color: var(--code-bg);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.diff-line {
+  padding: 2px 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-context {
+  color: var(--text-color);
+}
+
+.diff-addition {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+[data-theme="light"] .diff-addition {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+}
+
+.diff-deletion {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+[data-theme="light"] .diff-deletion {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+}
+
+.diff-hunk-header {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+[data-theme="light"] .diff-hunk-header {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #1e40af;
+}
+
+.diff-empty {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 48px 24px;
+  font-style: italic;
+}
+
+/* ============================================================
+   RESPONSIVE BEHAVIOR
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .files-content {
+    grid-template-columns: 1fr !important;
+  }
+
+  .file-tree-folder,
+  .file-tree-file {
+    padding: 10px 12px;
+  }
+
+  .timeline-commit {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .timeline-message {
+    font-size: 13px;
+  }
+
+  .timeline-meta {
+    font-size: 11px;
+  }
+}
+
+/* Dark/Light theme adjustments */
+[data-theme="dark"] .file-diff .diff-content {
+  background-color: #1a1a1a;
+}
+
+[data-theme="light"] .file-diff .diff-content {
+  background-color: #f8f9fa;
+}
+
+[data-theme="dark"] .timeline-hash {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .timeline-hash {
+  background-color: rgba(0, 0, 0, 0.05);
+}
