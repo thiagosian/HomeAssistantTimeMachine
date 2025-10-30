@@ -220,7 +220,7 @@ async function listYamlFilesRecursive(rootDir) {
     }
 
     for (const entry of entries) {
-      if (entry.name.startsWith('.')) {
+      if (entry.name.startsWith('._')) {
         continue;
       }
 
