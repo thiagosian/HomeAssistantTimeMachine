@@ -20,7 +20,6 @@ After updating:
 2. **Re-enter your backup path** in the settings menu.  
 3. **Reconfigure your schedule** in the settings menu.  
 
-### Update Issues
 Some users reported seeing **“Error 503: Service Unavailable”** right after updating to v2.  
 - In most cases, a **restart** of the add-on fixes it.  
 - If it persists, click **Rebuild**
