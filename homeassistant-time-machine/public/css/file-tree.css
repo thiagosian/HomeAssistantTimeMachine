@@ -116,10 +116,15 @@
   height: 12px;
   color: var(--text-secondary);
   transition: transform 0.2s ease;
+  margin-right: 4px;
 }
 
 .file-tree-item.expanded > div > .folder-chevron {
   transform: rotate(90deg);
+}
+
+.file-tree-folder > .folder-chevron {
+  margin-left: 0;
 }
 
 .folder-svg,
