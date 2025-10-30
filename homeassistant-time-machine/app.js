@@ -593,8 +593,16 @@ app.post('/api/app-settings', async (req, res) => {
       }
     } else if (newMode === 'git') {
       // Already in Git mode, but settings might have changed (e.g., file watching options)
-      console.log('[save-docker-settings] Git mode settings updated, reinitializing file watcher...');
+      // OR Git Manager was never initialized (e.g., app restarted with Git mode already saved)
+      console.log('[save-docker-settings] Git mode settings updated, checking Git Manager...');
       try {
+        // Initialize Git Manager if it's not initialized yet
+        if (!gitManager) {
+          console.log('[save-docker-settings] Git Manager not initialized, initializing now...');
+          await initializeGitBackup();
+          console.log('[save-docker-settings] Git Manager initialized successfully');
+        }
+
         // Stop existing watcher if any
         if (fileWatcher) {
           await fileWatcher.close();
@@ -605,7 +613,7 @@ app.post('/api/app-settings', async (req, res) => {
         await setupFileWatcher();
         console.log('[save-docker-settings] File watcher reinitialized with new settings');
       } catch (error) {
-        console.error('[save-docker-settings] Failed to reinitialize file watcher:', error);
+        console.error('[save-docker-settings] Failed to reinitialize Git Manager or file watcher:', error);
       }
     } else if (previousMode === 'git' && newMode === 'folder') {
       // Switching from Git to Folder mode
