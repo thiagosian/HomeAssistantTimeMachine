@@ -1,4 +1,4 @@
-# v2
+# v2.0
 
 ## What's New!
 - Added full **Ingress support**, allowing direct access through the Home Assistant UI — no port forwarding required.  
@@ -14,8 +14,8 @@
 - Exposed a **full REST API** for automation of backups and restores.
 
 ## Updating
-If you’re updating from **v1**, please note that this release is a **complete rebuild**.  
-Follow these steps after updating:
-1. **Restart the add-on** after the update completes.  
-2. **Re-enter your backup path** in the add-on configuration.  
-3. **Reconfigure your schedule** as previous settings will not carry over.
+If you’re updating from **v1**, note that this release is a **complete rebuild**.  
+After updating:
+1. **Restart the add-on.**  
+2. **Re-enter your backup path** in the settings menu.  
+3. **Reconfigure your schedule** in the settings menu.
