@@ -499,8 +499,24 @@ class GitManager {
       console.log('[GitManager] Getting all tracked files');
       const result = await this.git.raw(['ls-tree', '-r', '--name-only', 'HEAD']);
       const files = result.split('\n').filter(Boolean);
-      console.log(`[GitManager] Found ${files.length} tracked files`);
-      return files;
+
+      // Filter out files that match backup folder patterns (just in case)
+      const backupFolderPatterns = [
+        /^\d{4}\//,  // 2024/, 2025/
+        /^\d{4}-\d{2}-\d{2}/,  // 2024-01-01...
+        /^backup-\d+\//  // backup-123456789/
+      ];
+
+      const filteredFiles = files.filter(file => {
+        return !backupFolderPatterns.some(pattern => pattern.test(file));
+      });
+
+      if (filteredFiles.length !== files.length) {
+        console.log(`[GitManager] Filtered out ${files.length - filteredFiles.length} backup files`);
+      }
+
+      console.log(`[GitManager] Found ${filteredFiles.length} tracked files (after filtering)`);
+      return filteredFiles;
     } catch (error) {
       console.error('[GitManager] Error getting tracked files:', error);
       return [];
