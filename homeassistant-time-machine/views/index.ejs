@@ -2784,10 +2784,21 @@
         if (!hasCleanedBackups) {
           console.log('[files] Cleaning old backup folders...');
           try {
-            await fetch(url('/api/git-clean-old-backups'), { method: 'POST' });
+            const cleanResponse = await fetch(url('/api/git-clean-old-backups'), { method: 'POST' });
+            const cleanResult = await cleanResponse.json();
+            console.log('[files] Cleanup result:', cleanResult);
+
+            if (cleanResult.success && cleanResult.removed > 0) {
+              console.log(`[files] ✅ Removed ${cleanResult.removed} old backup folders:`, cleanResult.folders);
+            } else if (cleanResult.success && cleanResult.removed === 0) {
+              console.log('[files] ✅ No old backup folders found');
+            } else {
+              console.warn('[files] ⚠️ Cleanup failed:', cleanResult.message);
+            }
+
             hasCleanedBackups = true;
           } catch (cleanError) {
-            console.warn('[files] Failed to clean old backups:', cleanError);
+            console.error('[files] ❌ Failed to clean old backups:', cleanError);
           }
         }
 
