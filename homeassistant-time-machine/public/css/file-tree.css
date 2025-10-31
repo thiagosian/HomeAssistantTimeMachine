@@ -12,24 +12,14 @@
 
 .files-content {
   display: none;
-  grid-template-columns: 300px 1fr;
-  gap: 16px;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
   height: calc(100vh - 160px);
   padding: 0;
-  margin: 16px;
+  margin: 0;
 }
 
-@media (min-width: 1400px) {
-  .files-content {
-    grid-template-columns: 350px 1fr;
-  }
-}
-
-@media (min-width: 1800px) {
-  .files-content {
-    grid-template-columns: 400px 1fr;
-  }
-}
+/* Removed fixed-width media queries to maintain 1fr 2fr proportion */
 
 @media (max-width: 1200px) {
   .files-content .panel--files:nth-child(2) {
@@ -112,6 +102,40 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ============================================================
+   DELETED FILES STYLING
+   ============================================================ */
+
+.file-tree-file.deleted {
+  opacity: 0.6;
+}
+
+.file-tree-file.deleted .file-tree-name {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  font-style: italic;
+}
+
+.file-tree-file.deleted .tree-icon {
+  color: #ef4444;
+}
+
+[data-theme="light"] .file-tree-file.deleted .tree-icon {
+  color: #dc2626;
+}
+
+.file-tree-file.deleted:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.file-tree-file.deleted.selected {
+  background-color: rgba(239, 68, 68, 0.3);
+}
+
+.file-tree-file.deleted.selected:hover {
+  background-color: rgba(239, 68, 68, 0.4);
 }
 
 /* ============================================================

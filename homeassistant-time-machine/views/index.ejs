@@ -1899,12 +1899,16 @@
       }
     });
 
-    // Compare button
+    // Compare button - open full-screen modal like Backups tab
     document.getElementById('compareBtn').addEventListener('click', async () => {
       if (!selectedFilePath || !selectedCommitHash) return;
 
-      const contentViewer = document.getElementById('fileContentViewer');
-      contentViewer.innerHTML = '<p class="loading">Loading comparison...</p>';
+      const modal = document.getElementById('diffModal');
+      const modalBody = document.getElementById('diffModalBody');
+
+      // Show loading state in modal
+      modalBody.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 400px;"><p class="loading">Loading comparison...</p></div>';
+      modal.style.display = 'flex';
 
       try {
         // Get current version
@@ -1951,10 +1955,11 @@
           }
         );
 
-        contentViewer.innerHTML = diffHtml;
+        // Display diff in full-screen modal
+        modalBody.innerHTML = diffHtml;
       } catch (error) {
         console.error('[files] Error comparing files:', error);
-        contentViewer.innerHTML = `<p style="color: #ef4444; padding: 16px;">Error comparing files: ${error.message}</p>`;
+        modalBody.innerHTML = `<div style="display: flex; justify-content: center; align-items: center; height: 400px;"><p style="color: #ef4444;">Error comparing files: ${error.message}</p></div>`;
       }
     });
 
@@ -3005,10 +3010,13 @@
         }
       } else {
         const fileDiv = document.createElement('div');
-        fileDiv.className = 'file-tree-file';
+        fileDiv.className = node.deleted ? 'file-tree-file deleted' : 'file-tree-file';
         fileDiv.dataset.path = node.path;
+
+        // Use trash icon for deleted files, regular file icon otherwise
+        const fileIcon = node.deleted ? '🗑️' : '📄';
         fileDiv.innerHTML = `
-          <span class="tree-icon">📄</span>
+          <span class="tree-icon">${fileIcon}</span>
           <span class="file-tree-name">${escapeHtml(node.name)}</span>
         `;
 

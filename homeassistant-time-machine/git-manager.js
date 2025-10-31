@@ -524,6 +524,49 @@ class GitManager {
   }
 
   /**
+   * Get all files that have been deleted from the repository
+   * Compares full Git history with current HEAD to find deletions
+   * @returns {Promise<Array<string>>}
+   */
+  async getDeletedFiles() {
+    try {
+      console.log('[GitManager] Finding deleted files');
+
+      // Get all files that have ever existed in Git history
+      const allHistoricalResult = await this.git.raw([
+        'log', '--all', '--pretty=format:', '--name-only', '--diff-filter=A'
+      ]);
+      const historicalFiles = [...new Set(allHistoricalResult.split('\n').filter(Boolean))];
+
+      // Get current files at HEAD
+      const currentFiles = new Set(await this.getAllTrackedFiles());
+
+      // Filter out backup folders from historical files
+      const backupFolderPatterns = [
+        /^\d{4}\//,  // 2024/, 2025/
+        /^\d{4}-\d{2}-\d{2}/,  // 2024-01-01...
+        /^backup-\d+\//  // backup-123456789/
+      ];
+
+      // Find files that existed in history but don't exist now
+      const deletedFiles = historicalFiles.filter(file => {
+        // Skip backup folder files
+        const isBackupFile = backupFolderPatterns.some(pattern => pattern.test(file));
+        if (isBackupFile) return false;
+
+        // Include if not in current files
+        return !currentFiles.has(file);
+      });
+
+      console.log(`[GitManager] Found ${deletedFiles.length} deleted files`);
+      return deletedFiles;
+    } catch (error) {
+      console.error('[GitManager] Error finding deleted files:', error);
+      return [];
+    }
+  }
+
+  /**
    * Build hierarchical file tree from flat file list
    * Organizes files into folder structure with sorting (folders first, then alphabetically)
    * @returns {Promise<{name: string, type: string, path: string, children: Array}>}
@@ -532,6 +575,7 @@ class GitManager {
     try {
       console.log('[GitManager] Building file tree');
       const files = await this.getAllTrackedFiles();
+      const deletedFiles = await this.getDeletedFiles();
 
       const tree = {
         name: 'root',
@@ -540,8 +584,8 @@ class GitManager {
         children: []
       };
 
-      // Build tree structure
-      files.forEach(filePath => {
+      // Helper function to add file to tree
+      const addFileToTree = (filePath, isDeleted = false) => {
         const parts = filePath.split('/');
         let current = tree;
 
@@ -558,6 +602,12 @@ class GitManager {
               path: currentPath,
               children: isFile ? undefined : []
             };
+
+            // Mark deleted files
+            if (isFile && isDeleted) {
+              child.deleted = true;
+            }
+
             current.children.push(child);
           }
 
@@ -565,7 +615,13 @@ class GitManager {
             current = child;
           }
         });
-      });
+      };
+
+      // Build tree structure for current files
+      files.forEach(filePath => addFileToTree(filePath, false));
+
+      // Add deleted files to tree
+      deletedFiles.forEach(filePath => addFileToTree(filePath, true));
 
       // Sort tree: folders first, then files, alphabetically
       function sortTree(node) {
@@ -584,7 +640,7 @@ class GitManager {
       }
       sortTree(tree);
 
-      console.log(`[GitManager] File tree built successfully`);
+      console.log(`[GitManager] File tree built successfully (${files.length} current, ${deletedFiles.length} deleted)`);
       return tree;
     } catch (error) {
       console.error('[GitManager] Error building file tree:', error);
