@@ -1190,6 +1190,59 @@ app.post('/api/git-file-content', async (req, res) => {
   }
 });
 
+// Restore file from Git commit
+app.post('/api/git-restore-file', async (req, res) => {
+  try {
+    const { commitHash, filePath } = req.body;
+
+    if (!commitHash) {
+      return res.status(400).json({ error: 'Commit hash is required' });
+    }
+
+    if (!filePath) {
+      return res.status(400).json({ error: 'File path is required' });
+    }
+
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    if (backupMode !== 'git') {
+      return res.status(400).json({ error: 'Git mode is not enabled' });
+    }
+
+    if (!gitManager) {
+      return res.status(500).json({ error: 'Git manager not initialized' });
+    }
+
+    console.log(`[git-restore-file] Restoring ${filePath} from commit ${commitHash}`);
+
+    // Get the backup path (Git repo location)
+    const backupPath = settings.backupFolderPath || '/media/timemachine';
+
+    // Destination is the current file location in the backup path
+    const destinationPath = path.join(backupPath, filePath);
+
+    const result = await gitManager.restoreFromGit(commitHash, filePath, destinationPath);
+
+    if (result.success) {
+      // Create a commit recording the restore
+      try {
+        await gitManager.performGitBackup('manual', filePath);
+        console.log(`[git-restore-file] Created commit for restored file`);
+      } catch (commitError) {
+        console.warn(`[git-restore-file] Failed to create commit after restore:`, commitError);
+      }
+
+      res.json({ success: true, message: result.message });
+    } else {
+      res.status(500).json({ error: result.message });
+    }
+  } catch (error) {
+    console.error('[git-restore-file] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get backup automations
 app.post('/api/get-backup-automations', async (req, res) => {
   try {

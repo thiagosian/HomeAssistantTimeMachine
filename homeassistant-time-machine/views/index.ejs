@@ -306,8 +306,9 @@
       </div>
     </div>
 
-    <!-- Files 3-panel layout -->
+    <!-- Files 2-panel layout -->
     <div class="files-content" id="filesContent" style="display: none;">
+      <!-- Left Panel: File Tree -->
       <div class="panel panel--files">
         <div class="panel-header">
           <div class="panel-header-info">
@@ -328,40 +329,48 @@
         </div>
       </div>
 
+      <!-- Right Panel: File Content with Version Selector -->
       <div class="panel panel--files">
         <div class="panel-header">
           <div class="panel-header-info">
-            <h2 id="fileHistoryTitle">Select a file</h2>
-            <p id="fileHistoryCount"></p>
+            <h2 id="fileContentTitle">Select a file</h2>
+            <p id="fileContentSubtitle"></p>
           </div>
         </div>
-        <div id="fileHistory" class="file-history">
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
-            <div class="file-icon-container">
-              <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p class="empty-state-message">Select a file to view its history</p>
-          </div>
-        </div>
-      </div>
 
-      <div class="panel panel--files">
-        <div class="panel-header">
-          <div class="panel-header-info">
-            <h2 id="fileDiffTitle">Select a commit</h2>
-            <p id="fileDiffSubtitle"></p>
-          </div>
+        <!-- Version Selector -->
+        <div class="version-selector-container" id="versionSelectorContainer" style="display: none;">
+          <label for="versionSelector">Version:</label>
+          <select id="versionSelector" class="version-selector">
+            <option value="">Select a version</option>
+          </select>
         </div>
-        <div id="fileDiffViewer" class="file-diff">
+
+        <!-- Action Buttons -->
+        <div class="file-actions" id="fileActions" style="display: none;">
+          <button id="restoreBtn" class="action-btn action-btn-primary" disabled>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Restore This Version
+          </button>
+          <button id="compareBtn" class="action-btn action-btn-secondary" disabled>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            Compare with Current
+          </button>
+        </div>
+
+        <!-- File Content Viewer -->
+        <div id="fileContentViewer" class="file-diff">
           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
             <div class="file-icon-container">
               <svg class="file-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <p class="empty-state-message">Select a commit to view changes</p>
+            <p class="empty-state-message">Select a file to view its content</p>
           </div>
         </div>
       </div>
@@ -1856,6 +1865,93 @@
     document.getElementById('searchBox').addEventListener('input', applyFilters);
     document.getElementById('sortSelect').addEventListener('change', applyFilters);
 
+    // Version selector change
+    document.getElementById('versionSelector').addEventListener('change', onVersionChange);
+
+    // Restore button
+    document.getElementById('restoreBtn').addEventListener('click', async () => {
+      if (!selectedFilePath || !selectedCommitHash) return;
+
+      if (!confirm('Are you sure you want to restore this file version? This will overwrite the current file.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(url('/api/git-restore-file'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commitHash: selectedCommitHash,
+            filePath: selectedFilePath
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to restore file');
+        }
+
+        alert('File restored successfully!');
+      } catch (error) {
+        console.error('[files] Error restoring file:', error);
+        alert(`Error restoring file: ${error.message}`);
+      }
+    });
+
+    // Compare button
+    document.getElementById('compareBtn').addEventListener('click', async () => {
+      if (!selectedFilePath || !selectedCommitHash) return;
+
+      const contentViewer = document.getElementById('fileContentViewer');
+      contentViewer.innerHTML = '<p class="loading">Loading comparison...</p>';
+
+      try {
+        // Get current version
+        const currentResponse = await fetch(url('/api/git-file-content'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commitHash: 'HEAD',
+            filePath: selectedFilePath
+          })
+        });
+
+        const currentData = await currentResponse.json();
+        if (!currentResponse.ok) throw new Error('Failed to load current version');
+
+        // Get selected version
+        const selectedResponse = await fetch(url('/api/git-file-content'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commitHash: selectedCommitHash,
+            filePath: selectedFilePath
+          })
+        });
+
+        const selectedData = await selectedResponse.json();
+        if (!selectedResponse.ok) throw new Error('Failed to load selected version');
+
+        // Display side-by-side comparison
+        contentViewer.innerHTML = `
+          <div class="compare-view">
+            <div class="compare-panel">
+              <div class="compare-panel-header">Selected Version</div>
+              <pre class="compare-panel-content">${escapeHtml(selectedData.content || '')}</pre>
+            </div>
+            <div class="compare-panel">
+              <div class="compare-panel-header">Current Version (HEAD)</div>
+              <pre class="compare-panel-content">${escapeHtml(currentData.content || '')}</pre>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        console.error('[files] Error comparing files:', error);
+        contentViewer.innerHTML = `<p style="color: #ef4444; padding: 16px;">Error comparing files: ${error.message}</p>`;
+      }
+    });
+
     // File tree search
     document.getElementById('fileTreeSearch').addEventListener('input', (e) => {
       const searchTerm = e.target.value.toLowerCase();
@@ -2933,25 +3029,29 @@
       selectedFilePath = filePath;
       selectedCommitHash = null;
 
-      const historyContainer = document.getElementById('fileHistory');
-      const titleEl = document.getElementById('fileHistoryTitle');
-      const countEl = document.getElementById('fileHistoryCount');
+      const titleEl = document.getElementById('fileContentTitle');
+      const subtitleEl = document.getElementById('fileContentSubtitle');
+      const versionSelector = document.getElementById('versionSelector');
+      const versionContainer = document.getElementById('versionSelectorContainer');
+      const actionsContainer = document.getElementById('fileActions');
+      const contentViewer = document.getElementById('fileContentViewer');
 
       titleEl.textContent = fileName || filePath;
-      countEl.textContent = 'Loading...';
-      historyContainer.innerHTML = '<p class="loading">Loading file history...</p>';
+      subtitleEl.textContent = 'Loading versions...';
+      versionSelector.innerHTML = '<option value="">Loading...</option>';
+      versionSelector.disabled = true;
+      versionContainer.style.display = 'flex';
+      actionsContainer.style.display = 'none';
 
-      // Reset diff viewer
-      document.getElementById('fileDiffTitle').textContent = 'Select a commit';
-      document.getElementById('fileDiffSubtitle').textContent = '';
-      document.getElementById('fileDiffViewer').innerHTML = `
+      // Reset content viewer
+      contentViewer.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
           <div class="file-icon-container">
             <svg class="file-icon" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p class="empty-state-message">Select a commit to view changes</p>
+          <p class="empty-state-message">Select a version to view content</p>
         </div>
       `;
 
@@ -2969,12 +3069,150 @@
         }
 
         fileHistoryData = data.commits;
-        renderFileHistory(data.commits, fileName || filePath);
-        countEl.textContent = `${data.commits.length} commit${data.commits.length !== 1 ? 's' : ''}`;
+        populateVersionSelector(data.commits);
+        subtitleEl.textContent = `${data.commits.length} version${data.commits.length !== 1 ? 's' : ''} available`;
       } catch (error) {
         console.error('[files] Error loading file history:', error);
-        historyContainer.innerHTML = `<p style="color: #ef4444; padding: 16px;">Error loading file history: ${error.message}</p>`;
-        countEl.textContent = '';
+        subtitleEl.textContent = 'Error loading versions';
+        versionSelector.innerHTML = '<option value="">Error loading versions</option>';
+        contentViewer.innerHTML = `<p style="color: #ef4444; padding: 16px;">Error loading file history: ${error.message}</p>`;
+      }
+    }
+
+    function populateVersionSelector(commits) {
+      const versionSelector = document.getElementById('versionSelector');
+
+      if (!commits || commits.length === 0) {
+        versionSelector.innerHTML = '<option value="">No versions available</option>';
+        versionSelector.disabled = true;
+        return;
+      }
+
+      // Clear and populate selector
+      versionSelector.innerHTML = '<option value="">Select a version</option>';
+
+      commits.forEach((commit, index) => {
+        const option = document.createElement('option');
+        option.value = commit.hash;
+
+        const date = new Date(commit.date);
+        const formattedDate = date.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        // Format: "Auto-save: Jan 15, 2025 10:30 AM" or "Scheduled Backup: Jan 15, 2025 10:30 AM"
+        let label = '';
+        if (commit.message.startsWith('Auto-save:')) {
+          label = `Auto-save: ${formattedDate}`;
+        } else if (commit.message.startsWith('Scheduled Backup:')) {
+          label = `Scheduled Backup: ${formattedDate}`;
+        } else {
+          // Fallback for other commit messages
+          label = `${formattedDate} - ${commit.message.substring(0, 40)}`;
+        }
+
+        option.textContent = label;
+        option.dataset.date = formattedDate;
+        option.dataset.message = commit.message;
+
+        versionSelector.appendChild(option);
+      });
+
+      versionSelector.disabled = false;
+
+      // Auto-select first version
+      if (commits.length > 0) {
+        versionSelector.value = commits[0].hash;
+        onVersionChange();
+      }
+    }
+
+    async function onVersionChange() {
+      const versionSelector = document.getElementById('versionSelector');
+      const restoreBtn = document.getElementById('restoreBtn');
+      const compareBtn = document.getElementById('compareBtn');
+      const actionsContainer = document.getElementById('fileActions');
+
+      const selectedHash = versionSelector.value;
+
+      if (!selectedHash) {
+        restoreBtn.disabled = true;
+        compareBtn.disabled = true;
+        actionsContainer.style.display = 'none';
+        return;
+      }
+
+      // Enable buttons
+      restoreBtn.disabled = false;
+      compareBtn.disabled = false;
+      actionsContainer.style.display = 'flex';
+
+      // Load file content at selected version
+      const selectedOption = versionSelector.options[versionSelector.selectedIndex];
+      const commitDate = selectedOption.dataset.date;
+      const commitMessage = selectedOption.dataset.message;
+
+      await loadFileContent(selectedHash, selectedFilePath, commitMessage, commitDate);
+    }
+
+    async function loadFileContent(commitHash, filePath, commitMessage, commitDate) {
+      console.log(`[files] Loading content for ${filePath} at ${commitHash}`);
+      selectedCommitHash = commitHash;
+
+      const contentViewer = document.getElementById('fileContentViewer');
+      contentViewer.innerHTML = '<p class="loading">Loading file content...</p>';
+
+      try {
+        const response = await fetch(url('/api/git-file-content'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ commitHash, filePath })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load file content');
+        }
+
+        const content = data.content || '';
+
+        if (content.trim() === '') {
+          contentViewer.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center;">
+              <div class="file-icon-container">
+                <svg class="file-icon" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p class="empty-state-message">File is empty at this version</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Render file content
+        contentViewer.innerHTML = `
+          <div class="diff-container">
+            <div class="diff-file">
+              <div class="diff-file-header">
+                <svg style="width: 16px; height: 16px; margin-right: 8px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                ${escapeHtml(filePath.split('/').pop())}
+                <span style="margin-left: auto; font-size: 12px; opacity: 0.7;">${commitDate}</span>
+              </div>
+              <pre class="diff-content" style="padding: 16px; margin: 0; overflow: auto;">${escapeHtml(content)}</pre>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        console.error('[files] Error loading file content:', error);
+        contentViewer.innerHTML = `<p style="color: #ef4444; padding: 16px;">Error loading file content: ${error.message}</p>`;
       }
     }
 
