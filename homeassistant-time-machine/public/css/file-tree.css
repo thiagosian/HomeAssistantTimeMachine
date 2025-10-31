@@ -61,19 +61,15 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  line-height: 20px;
 }
 
 .file-tree-item {
   user-select: none;
-  margin: 0;
-  padding: 0;
-  line-height: 20px;
 }
 
 .file-tree-children {
   display: none;
-  padding-left: 0;
+  padding-left: 24px;
 }
 
 .file-tree-item.expanded > .file-tree-children {
@@ -84,14 +80,11 @@
 .file-tree-file {
   display: flex;
   align-items: center;
-  padding: 0 8px;
+  padding: 6px 12px;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: background-color 0.15s ease;
-  font-family: 'Courier New', 'Consolas', monospace;
-  font-size: 14px;
-  line-height: 20px;
-  height: 20px;
+  gap: 8px;
 }
 
 .file-tree-folder:hover,
@@ -108,36 +101,17 @@
   background-color: var(--primary-color-hover);
 }
 
-/* Tree-style connectors */
-.tree-prefix {
-  color: var(--text-secondary);
-  opacity: 0.5;
-  white-space: pre;
-  flex-shrink: 0;
-  line-height: 20px;
-}
-
-.tree-connector {
-  color: var(--text-secondary);
-  opacity: 0.5;
-  margin-right: 4px;
-  flex-shrink: 0;
-  line-height: 20px;
-}
-
 .tree-icon {
-  margin-right: 6px;
   flex-shrink: 0;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 16px;
 }
 
 .file-tree-name {
   flex: 1;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 20px;
 }
 
 /* ============================================================

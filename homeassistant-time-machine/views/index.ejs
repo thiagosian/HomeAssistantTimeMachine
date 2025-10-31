@@ -2837,25 +2837,20 @@
 
       const treeList = document.createElement('ul');
       treeList.className = 'file-tree-list';
-      tree.children.forEach((node, index) => {
-        const isLast = index === tree.children.length - 1;
-        treeList.appendChild(createTreeNode(node, isLast, ''));
+      tree.children.forEach((node) => {
+        treeList.appendChild(createTreeNode(node));
       });
       treeContainer.appendChild(treeList);
     }
 
-    function createTreeNode(node, isLast = false, prefix = '') {
+    function createTreeNode(node) {
       const li = document.createElement('li');
       li.className = 'file-tree-item';
 
       if (node.type === 'folder') {
         const folderDiv = document.createElement('div');
         folderDiv.className = 'file-tree-folder';
-
-        const connector = isLast ? '└─' : '├─';
         folderDiv.innerHTML = `
-          <span class="tree-prefix">${prefix}</span>
-          <span class="tree-connector">${connector}</span>
           <span class="tree-icon">📁</span>
           <span class="file-tree-name">${escapeHtml(node.name)}</span>
         `;
@@ -2870,11 +2865,8 @@
         if (node.children && node.children.length > 0) {
           const childList = document.createElement('ul');
           childList.className = 'file-tree-list file-tree-children';
-
-          const childPrefix = prefix + (isLast ? '   ' : '│  ');
-          node.children.forEach((child, index) => {
-            const isLastChild = index === node.children.length - 1;
-            childList.appendChild(createTreeNode(child, isLastChild, childPrefix));
+          node.children.forEach((child) => {
+            childList.appendChild(createTreeNode(child));
           });
           li.appendChild(childList);
         }
@@ -2882,11 +2874,7 @@
         const fileDiv = document.createElement('div');
         fileDiv.className = 'file-tree-file';
         fileDiv.dataset.path = node.path;
-
-        const connector = isLast ? '└─' : '├─';
         fileDiv.innerHTML = `
-          <span class="tree-prefix">${prefix}</span>
-          <span class="tree-connector">${connector}</span>
           <span class="tree-icon">📄</span>
           <span class="file-tree-name">${escapeHtml(node.name)}</span>
         `;
