@@ -243,10 +243,10 @@
         Files
       </button>
       <button class="tab" data-tab="backups" id="backupsTab">
-        Backups
-        <svg class="tab-chevron" style="width: 14px; height: 14px; margin-left: 6px; vertical-align: -2px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        <svg style="width: 16px; height: 16px; margin-right: 6px; vertical-align: -2px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
+        Backups
       </button>
     </div>
 
@@ -513,15 +513,10 @@
       if (dayLabel) dayLabel.textContent = 'Day'; // This could be made dynamic too
       document.getElementById('maxBackupsLabel').textContent = getStyledText('ui.labels.maxBackups');
       document.getElementById('maxBackupsCountLabel').textContent = getStyledText('ui.labels.backupsToKeep');
-      
-      // Update tab buttons
-      document.getElementById('automationsTab').textContent = getStyledText('ui.buttons.automations');
-      document.getElementById('scriptsTab').textContent = getStyledText('ui.buttons.scripts');
-      document.getElementById('lovelaceTab').textContent = getStyledText('ui.buttons.lovelace');
-      document.getElementById('esphomeTab').textContent = getStyledText('ui.buttons.esphome');
-      document.getElementById('packagesTab').textContent = getStyledText('ui.buttons.packages');
+
+      // Update buttons (subtabs removed, only settings button remains)
       document.getElementById('settingsBtn').textContent = getStyledText('ui.buttons.settings');
-      
+
       // Update main panel titles
       document.getElementById('backupsTitle').textContent = getStyledText('ui.labels.backups');
       
@@ -1795,18 +1790,7 @@
       const newMode = e.target.value;
       if (newMode === currentMode) return;
 
-      if (newMode === 'esphome' && !esphomeFeatureEnabled) {
-        showNotification(getEsphomeDisabledMessage(), 'info');
-        e.target.value = currentMode; // Revert selection
-        return;
-      }
-
-      if (newMode === 'packages' && !packagesFeatureEnabled) {
-        showNotification(getPackagesDisabledMessage(), 'info');
-        e.target.value = currentMode; // Revert selection
-        return;
-      }
-
+      // Options are only shown if enabled (controlled by EJS), so no need to check here
       currentMode = newMode;
       loadSubtabContent(currentMode);
     });
@@ -1876,19 +1860,41 @@
       const searchTerm = e.target.value.toLowerCase();
       const items = document.querySelectorAll('.file-tree-item');
 
+      if (searchTerm === '') {
+        // Clear search - reset all
+        items.forEach(item => {
+          item.style.display = '';
+          item.classList.remove('expanded');
+        });
+        return;
+      }
+
+      // First pass: mark matching items
+      const matchingItems = new Set();
       items.forEach(item => {
         const nameEl = item.querySelector('.file-tree-name');
         if (!nameEl) return;
 
         const name = nameEl.textContent.toLowerCase();
-        const matches = name.includes(searchTerm);
+        if (name.includes(searchTerm)) {
+          matchingItems.add(item);
 
-        if (matches || searchTerm === '') {
-          item.style.display = '';
-          // If it's a folder and matches, expand it
-          if (searchTerm !== '' && item.querySelector('.file-tree-folder')) {
-            item.classList.add('expanded');
+          // Expand all parent folders
+          let parent = item.parentElement;
+          while (parent) {
+            if (parent.classList && parent.classList.contains('file-tree-item')) {
+              matchingItems.add(parent);
+              parent.classList.add('expanded');
+            }
+            parent = parent.parentElement;
           }
+        }
+      });
+
+      // Second pass: show/hide based on matches
+      items.forEach(item => {
+        if (matchingItems.has(item)) {
+          item.style.display = '';
         } else {
           item.style.display = 'none';
         }
@@ -2845,14 +2851,12 @@
         const folderDiv = document.createElement('div');
         folderDiv.className = 'file-tree-folder';
         folderDiv.innerHTML = `
-          <span class="file-tree-icon" style="display: inline-flex; align-items: center; gap: 4px;">
-            <svg class="folder-chevron" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0;">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-            <svg class="folder-svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0;">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
-          </span>
+          <svg class="folder-chevron" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0; margin-right: 4px;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          <svg class="folder-svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0; margin-right: 8px;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
           <span class="file-tree-name">${escapeHtml(node.name)}</span>
         `;
 
