@@ -61,10 +61,14 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  line-height: 20px;
 }
 
 .file-tree-item {
   user-select: none;
+  margin: 0;
+  padding: 0;
+  line-height: 20px;
 }
 
 .file-tree-children {
@@ -80,13 +84,14 @@
 .file-tree-file {
   display: flex;
   align-items: center;
-  padding: 4px 8px;
+  padding: 0 8px;
   cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.15s ease;
   font-family: 'Courier New', 'Consolas', monospace;
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 20px;
+  height: 20px;
 }
 
 .file-tree-folder:hover,
@@ -109,6 +114,7 @@
   opacity: 0.5;
   white-space: pre;
   flex-shrink: 0;
+  line-height: 20px;
 }
 
 .tree-connector {
@@ -116,12 +122,14 @@
   opacity: 0.5;
   margin-right: 4px;
   flex-shrink: 0;
+  line-height: 20px;
 }
 
 .tree-icon {
   margin-right: 6px;
   flex-shrink: 0;
   font-size: 14px;
+  line-height: 20px;
 }
 
 .file-tree-name {
@@ -129,6 +137,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 20px;
 }
 
 /* ============================================================
