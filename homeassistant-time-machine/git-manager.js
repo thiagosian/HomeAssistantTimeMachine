@@ -146,10 +146,34 @@ class GitManager {
 
       console.log(`[GitManager] Found ${foldersToRemove.length} backup folders to remove:`, foldersToRemove);
 
-      // Remove from Git index (but keep files on disk)
-      for (const folder of foldersToRemove) {
-        console.log(`[GitManager] Removing folder from Git: ${folder}`);
-        await this.git.raw(['rm', '-r', '--cached', folder]);
+      // Get all files that belong to these folders
+      const filesToRemove = files.filter(file => {
+        return foldersToRemove.some(folder => file.startsWith(folder + '/'));
+      });
+
+      console.log(`[GitManager] Found ${filesToRemove.length} files to remove from ${foldersToRemove.length} folders`);
+      console.log(`[GitManager] Sample files to remove:`, filesToRemove.slice(0, 5));
+
+      if (filesToRemove.length === 0) {
+        console.log('[GitManager] No files found in backup folders (folders may be empty)');
+        return {
+          success: true,
+          removed: 0,
+          message: 'No files found in backup folders',
+          debug: {
+            folders: foldersToRemove,
+            totalFiles: files.length
+          }
+        };
+      }
+
+      // Remove files from Git index (but keep files on disk)
+      // Process in batches to avoid command line length limits
+      const batchSize = 100;
+      for (let i = 0; i < filesToRemove.length; i += batchSize) {
+        const batch = filesToRemove.slice(i, i + batchSize);
+        console.log(`[GitManager] Removing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(filesToRemove.length / batchSize)} (${batch.length} files)`);
+        await this.git.raw(['rm', '--cached', '--', ...batch]);
       }
 
       // Commit the removal
