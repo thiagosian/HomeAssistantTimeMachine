@@ -96,8 +96,8 @@ class GitManager {
     try {
       console.log('[GitManager] Scanning for old backup folders');
 
-      // Get all tracked files (same method as getFileTree uses)
-      const result = await this.git.raw(['ls-tree', '-r', '--name-only', 'HEAD']);
+      // Get all tracked files from the index (guaranteed to be actual files, not directories)
+      const result = await this.git.raw(['ls-files', '--cached']);
       const files = result.split('\n').filter(Boolean);
 
       console.log(`[GitManager] Total tracked files: ${files.length}`);
@@ -170,10 +170,25 @@ class GitManager {
       // Remove files from Git index (but keep files on disk)
       // Process in batches to avoid command line length limits
       const batchSize = 100;
+      let removedCount = 0;
+      let errors = [];
+
       for (let i = 0; i < filesToRemove.length; i += batchSize) {
         const batch = filesToRemove.slice(i, i + batchSize);
         console.log(`[GitManager] Removing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(filesToRemove.length / batchSize)} (${batch.length} files)`);
-        await this.git.raw(['rm', '--cached', '--', ...batch]);
+
+        try {
+          await this.git.raw(['rm', '--cached', '--ignore-unmatch', '--', ...batch]);
+          removedCount += batch.length;
+        } catch (error) {
+          console.error(`[GitManager] Error removing batch:`, error.message);
+          errors.push(error.message);
+        }
+      }
+
+      console.log(`[GitManager] Successfully processed ${removedCount} files`);
+      if (errors.length > 0) {
+        console.warn(`[GitManager] Encountered ${errors.length} errors during removal`);
       }
 
       // Commit the removal
