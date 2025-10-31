@@ -1933,19 +1933,25 @@
         const selectedData = await selectedResponse.json();
         if (!selectedResponse.ok) throw new Error('Failed to load selected version');
 
-        // Display side-by-side comparison
-        contentViewer.innerHTML = `
-          <div class="compare-view">
-            <div class="compare-panel">
-              <div class="compare-panel-header">Selected Version</div>
-              <pre class="compare-panel-content">${escapeHtml(selectedData.content || '')}</pre>
-            </div>
-            <div class="compare-panel">
-              <div class="compare-panel-header">Current Version (HEAD)</div>
-              <pre class="compare-panel-content">${escapeHtml(currentData.content || '')}</pre>
-            </div>
-          </div>
-        `;
+        // Get version selector info for labels
+        const versionSelector = document.getElementById('versionSelector');
+        const selectedOption = versionSelector.options[versionSelector.selectedIndex];
+        const versionLabel = selectedOption ? selectedOption.textContent : 'Selected Version';
+
+        // Use generateDiff() function (same as Backups tab) for colored diff
+        const diffHtml = generateDiff(
+          selectedData.content || '',
+          currentData.content || '',
+          {
+            leftLabel: versionLabel,
+            rightLabel: 'Current Version (HEAD)',
+            leftMeta: selectedCommitHash.substring(0, 7),
+            rightMeta: 'HEAD',
+            bannerText: `Comparing ${selectedFilePath}`
+          }
+        );
+
+        contentViewer.innerHTML = diffHtml;
       } catch (error) {
         console.error('[files] Error comparing files:', error);
         contentViewer.innerHTML = `<p style="color: #ef4444; padding: 16px;">Error comparing files: ${error.message}</p>`;
@@ -3145,6 +3151,9 @@
         actionsContainer.style.display = 'none';
         return;
       }
+
+      // Update selected commit hash BEFORE enabling buttons
+      selectedCommitHash = selectedHash;
 
       // Enable buttons
       restoreBtn.disabled = false;
