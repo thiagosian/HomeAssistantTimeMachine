@@ -395,6 +395,7 @@
     let selectedFilePath = null;
     let selectedCommitHash = null;
     let fileHistoryData = [];
+    let hasCleanedBackups = false;
 
     if (!document.body.dataset.theme) {
       document.body.dataset.theme = currentTheme;
@@ -2772,8 +2773,6 @@
     // ============================================================
     // FILES MODE FUNCTIONS
     // ============================================================
-
-    let hasCleanedBackups = false;
 
     async function loadFileTree() {
       console.log('[files] Loading file tree...');
