@@ -1098,6 +1098,30 @@ app.get('/api/git-file-tree', async (req, res) => {
   }
 });
 
+// Clean up old folder-mode backups from Git tracking
+app.post('/api/git-clean-old-backups', async (req, res) => {
+  try {
+    const settings = await loadDockerSettings();
+    const backupMode = settings.backupMode || 'folder';
+
+    if (backupMode !== 'git') {
+      return res.status(400).json({ error: 'Git mode is not enabled' });
+    }
+
+    if (!gitManager) {
+      return res.status(500).json({ error: 'Git manager not initialized' });
+    }
+
+    console.log('[git-clean-old-backups] Removing old backup folders');
+    const result = await gitManager.removeOldBackupFolders();
+
+    res.json(result);
+  } catch (error) {
+    console.error('[git-clean-old-backups] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get commit history for a specific file
 app.post('/api/git-file-history', async (req, res) => {
   try {

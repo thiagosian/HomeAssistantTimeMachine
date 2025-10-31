@@ -2773,12 +2773,25 @@
     // FILES MODE FUNCTIONS
     // ============================================================
 
+    let hasCleanedBackups = false;
+
     async function loadFileTree() {
       console.log('[files] Loading file tree...');
       const treeContainer = document.getElementById('fileTree');
       treeContainer.innerHTML = '<p class="loading">Loading file tree...</p>';
 
       try {
+        // Clean old backup folders on first load
+        if (!hasCleanedBackups) {
+          console.log('[files] Cleaning old backup folders...');
+          try {
+            await fetch(url('/api/git-clean-old-backups'), { method: 'POST' });
+            hasCleanedBackups = true;
+          } catch (cleanError) {
+            console.warn('[files] Failed to clean old backups:', cleanError);
+          }
+        }
+
         const response = await fetch(url('/api/git-file-tree'));
         const data = await response.json();
 

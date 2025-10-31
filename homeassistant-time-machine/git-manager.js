@@ -63,6 +63,11 @@ class GitManager {
           '.uuid',
           '.cloud',
           '.storage/auth*',
+          '',
+          '# Old folder-mode backups (timestamp directories)',
+          '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*/',
+          '*[0-9][0-9]-[0-9][0-9]-[0-9][0-9]*/',
+          'backup-*/',
           ''
         ].join('\n');
 
@@ -78,6 +83,59 @@ class GitManager {
     } catch (error) {
       console.error('[GitManager] Error initializing repository:', error);
       return { success: false, message: `Error: ${error.message}` };
+    }
+  }
+
+  /**
+   * Remove old folder-mode backup directories from Git tracking
+   * This cleans up backup folders that were committed before switching to Git mode
+   * @returns {Promise<{success: boolean, removed: number, message: string}>}
+   */
+  async removeOldBackupFolders() {
+    try {
+      console.log('[GitManager] Scanning for old backup folders');
+
+      // Get all tracked files
+      const result = await this.git.raw(['ls-tree', '-r', '-d', '--name-only', 'HEAD']);
+      const folders = result.split('\n').filter(Boolean);
+
+      // Pattern to match timestamp folders (YYYY-MM-DD format and variants)
+      const backupFolderPatterns = [
+        /^\d{4}-\d{2}-\d{2}/,  // 2024-01-01...
+        /\d{4}-\d{2}-\d{2}-\d{2}-\d{2}/,  // ...with timestamp
+        /^backup-\d+/,  // backup-123456789
+        /^\d{10,}/  // Unix timestamp folders
+      ];
+
+      const foldersToRemove = folders.filter(folder => {
+        const baseName = folder.split('/')[0];  // Get top-level folder
+        return backupFolderPatterns.some(pattern => pattern.test(baseName));
+      });
+
+      if (foldersToRemove.length === 0) {
+        console.log('[GitManager] No old backup folders found');
+        return { success: true, removed: 0, message: 'No old backup folders found' };
+      }
+
+      console.log(`[GitManager] Found ${foldersToRemove.length} backup folders to remove`);
+
+      // Remove from Git index (but keep files on disk)
+      for (const folder of foldersToRemove) {
+        await this.git.raw(['rm', '-r', '--cached', folder]);
+      }
+
+      // Commit the removal
+      await this.git.commit(`Clean up: Remove ${foldersToRemove.length} old folder-mode backup directories from Git tracking`);
+
+      console.log(`[GitManager] Removed ${foldersToRemove.length} backup folders from Git`);
+      return {
+        success: true,
+        removed: foldersToRemove.length,
+        message: `Removed ${foldersToRemove.length} old backup folders`
+      };
+    } catch (error) {
+      console.error('[GitManager] Error removing old backup folders:', error);
+      return { success: false, removed: 0, message: `Error: ${error.message}` };
     }
   }
 
