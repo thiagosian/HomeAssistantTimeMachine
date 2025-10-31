@@ -65,6 +65,7 @@ class GitManager {
           '.storage/auth*',
           '',
           '# Old folder-mode backups (timestamp directories)',
+          '[0-9][0-9][0-9][0-9]/',  // Year folders: 2024/, 2025/
           '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*/',
           '*[0-9][0-9]-[0-9][0-9]-[0-9][0-9]*/',
           'backup-*/',
@@ -101,6 +102,7 @@ class GitManager {
 
       // Pattern to match timestamp folders (YYYY-MM-DD format and variants)
       const backupFolderPatterns = [
+        /^\d{4}$/,  // Year folders: 2024, 2025 (folder-mode structure)
         /^\d{4}-\d{2}-\d{2}/,  // 2024-01-01...
         /\d{4}-\d{2}-\d{2}-\d{2}-\d{2}/,  // ...with timestamp
         /^backup-\d+/,  // backup-123456789
