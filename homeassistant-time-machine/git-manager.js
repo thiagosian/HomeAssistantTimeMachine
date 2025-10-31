@@ -96,9 +96,12 @@ class GitManager {
     try {
       console.log('[GitManager] Scanning for old backup folders');
 
-      // Get all tracked files (not directories, since Git tracks files)
-      const result = await this.git.raw(['ls-files']);
+      // Get all tracked files (same method as getFileTree uses)
+      const result = await this.git.raw(['ls-tree', '-r', '--name-only', 'HEAD']);
       const files = result.split('\n').filter(Boolean);
+
+      console.log(`[GitManager] Total tracked files: ${files.length}`);
+      console.log(`[GitManager] First 10 files:`, files.slice(0, 10));
 
       // Extract unique top-level folders from file paths
       const topLevelFolders = new Set();
@@ -109,7 +112,8 @@ class GitManager {
         }
       });
 
-      console.log(`[GitManager] Found ${topLevelFolders.size} top-level folders:`, Array.from(topLevelFolders));
+      const topLevelArray = Array.from(topLevelFolders);
+      console.log(`[GitManager] Found ${topLevelFolders.size} top-level folders:`, topLevelArray);
 
       // Pattern to match timestamp folders (YYYY-MM-DD format and variants)
       const backupFolderPatterns = [
@@ -120,13 +124,24 @@ class GitManager {
         /^\d{10,}/  // Unix timestamp folders
       ];
 
-      const foldersToRemove = Array.from(topLevelFolders).filter(folder => {
-        return backupFolderPatterns.some(pattern => pattern.test(folder));
+      const foldersToRemove = topLevelArray.filter(folder => {
+        const matches = backupFolderPatterns.some(pattern => pattern.test(folder));
+        console.log(`[GitManager] Testing folder "${folder}": ${matches}`);
+        return matches;
       });
 
       if (foldersToRemove.length === 0) {
         console.log('[GitManager] No old backup folders found');
-        return { success: true, removed: 0, message: 'No old backup folders found' };
+        return {
+          success: true,
+          removed: 0,
+          message: 'No old backup folders found',
+          debug: {
+            totalFiles: files.length,
+            topLevelFolders: topLevelArray,
+            sampleFiles: files.slice(0, 10)
+          }
+        };
       }
 
       console.log(`[GitManager] Found ${foldersToRemove.length} backup folders to remove:`, foldersToRemove);

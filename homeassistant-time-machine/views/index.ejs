@@ -2788,6 +2788,14 @@
             const cleanResult = await cleanResponse.json();
             console.log('[files] Cleanup result:', cleanResult);
 
+            // Show debug information if available
+            if (cleanResult.debug) {
+              console.log('[files] 📊 Debug Info:');
+              console.log(`  - Total tracked files: ${cleanResult.debug.totalFiles}`);
+              console.log(`  - Top-level folders:`, cleanResult.debug.topLevelFolders);
+              console.log(`  - Sample files:`, cleanResult.debug.sampleFiles);
+            }
+
             if (cleanResult.success && cleanResult.removed > 0) {
               console.log(`[files] ✅ Removed ${cleanResult.removed} old backup folders:`, cleanResult.folders);
             } else if (cleanResult.success && cleanResult.removed === 0) {
