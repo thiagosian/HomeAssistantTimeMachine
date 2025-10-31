@@ -119,12 +119,8 @@
   margin-right: 4px;
 }
 
-.file-tree-item.expanded > div > .folder-chevron {
+.file-tree-item.expanded > div > .file-tree-icon > .folder-chevron {
   transform: rotate(90deg);
-}
-
-.file-tree-folder > .folder-chevron {
-  margin-left: 0;
 }
 
 .folder-svg,

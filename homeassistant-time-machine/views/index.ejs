@@ -250,7 +250,7 @@
       </button>
     </div>
 
-    <div class="subtabs hidden" id="subtabs" style="display: none !important;">
+    <div class="subtabs" id="subtabs" style="display: none;">
       <button class="subtab active" data-tab="automations" id="automationsTab">Automations</button>
       <button class="subtab" data-tab="scripts" id="scriptsTab">Scripts</button>
       <button class="subtab" data-tab="lovelace" id="lovelaceTab">Lovelace</button>
@@ -1772,7 +1772,7 @@
           // Switch to Files mode
           document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
-          document.getElementById('subtabs').classList.add('hidden');
+          document.getElementById('subtabs').style.display = 'none';
           document.getElementById('standardContent').style.display = 'none';
           document.getElementById('filesContent').style.display = 'grid';
           currentMode = 'files';
@@ -1781,7 +1781,7 @@
           // Switch to Backups mode (show subtabs)
           document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
-          document.getElementById('subtabs').classList.remove('hidden');
+          document.getElementById('subtabs').style.display = 'flex';
           document.getElementById('standardContent').style.display = 'grid';
           document.getElementById('filesContent').style.display = 'none';
 
@@ -1869,14 +1869,14 @@
       // Check which tab is active in HTML
       if (filesTab && filesTab.classList.contains('active')) {
         // Files tab is active - hide subtabs, show files content
-        subtabs.classList.add('hidden');
+        subtabs.style.display = 'none';
         standardContent.style.display = 'none';
         filesContent.style.display = 'grid';
         currentMode = 'files';
         loadFileTree();
       } else if (backupsTab && backupsTab.classList.contains('active')) {
         // Backups tab is active - show subtabs, hide files content
-        subtabs.classList.remove('hidden');
+        subtabs.style.display = 'flex';
         standardContent.style.display = 'grid';
         filesContent.style.display = 'none';
         // Keep the currently selected subtab active (or default to automations)
@@ -2862,11 +2862,11 @@
         const folderDiv = document.createElement('div');
         folderDiv.className = 'file-tree-folder';
         folderDiv.innerHTML = `
-          <svg class="folder-chevron" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-          <span class="file-tree-icon">
-            <svg class="folder-svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <span class="file-tree-icon" style="display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="folder-chevron" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            <svg class="folder-svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0;">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
           </span>
