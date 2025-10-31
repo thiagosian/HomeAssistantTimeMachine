@@ -12,11 +12,12 @@
 
 .files-content {
   display: none;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: minmax(450px, 1fr) 2fr;
   gap: 24px;
-  height: calc(100vh - 160px);
+  height: calc(100vh - 220px);
   padding: 0;
-  margin: 0;
+  margin: 0 auto;
+  max-width: 100%;
 }
 
 /* Removed fixed-width media queries to maintain 1fr 2fr proportion */
@@ -30,10 +31,14 @@
 .panel--files {
   background-color: var(--card-bg);
   border-radius: 12px;
-  padding: 16px;
+  padding: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.panel--files .panel-header {
+  padding: 16px 12px;
 }
 
 /* ============================================================
@@ -350,8 +355,8 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 16px;
-  padding: 12px;
+  margin-bottom: 12px;
+  padding: 10px;
   background-color: var(--input-bg);
   border-radius: 8px;
   border: 1px solid var(--border-color);
@@ -388,7 +393,7 @@
 .file-actions {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
