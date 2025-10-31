@@ -69,7 +69,7 @@
 
 .file-tree-children {
   display: none;
-  padding-left: 20px;
+  padding-left: 0;
 }
 
 .file-tree-item.expanded > .file-tree-children {
@@ -80,11 +80,13 @@
 .file-tree-file {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 4px 8px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: background-color 0.15s ease;
-  gap: 8px;
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .file-tree-folder:hover,
@@ -101,42 +103,29 @@
   background-color: var(--primary-color-hover);
 }
 
-.file-tree-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Tree-style connectors */
+.tree-prefix {
+  color: var(--text-secondary);
+  opacity: 0.5;
+  white-space: pre;
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
 }
 
-.folder-chevron {
-  flex-shrink: 0;
-  width: 12px;
-  height: 12px;
+.tree-connector {
   color: var(--text-secondary);
-  transition: transform 0.2s ease;
+  opacity: 0.5;
   margin-right: 4px;
+  flex-shrink: 0;
 }
 
-.file-tree-item.expanded > div > .file-tree-icon > .folder-chevron {
-  transform: rotate(90deg);
-}
-
-.folder-svg,
-.file-svg {
-  width: 16px;
-  height: 16px;
-  color: var(--text-secondary);
-}
-
-.file-tree-file.selected .file-svg {
-  color: white;
+.tree-icon {
+  margin-right: 6px;
+  flex-shrink: 0;
+  font-size: 14px;
 }
 
 .file-tree-name {
   flex: 1;
-  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

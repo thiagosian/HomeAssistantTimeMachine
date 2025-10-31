@@ -2837,26 +2837,26 @@
 
       const treeList = document.createElement('ul');
       treeList.className = 'file-tree-list';
-      tree.children.forEach(node => {
-        treeList.appendChild(createTreeNode(node));
+      tree.children.forEach((node, index) => {
+        const isLast = index === tree.children.length - 1;
+        treeList.appendChild(createTreeNode(node, isLast, ''));
       });
       treeContainer.appendChild(treeList);
     }
 
-    function createTreeNode(node) {
+    function createTreeNode(node, isLast = false, prefix = '') {
       const li = document.createElement('li');
       li.className = 'file-tree-item';
 
       if (node.type === 'folder') {
         const folderDiv = document.createElement('div');
         folderDiv.className = 'file-tree-folder';
+
+        const connector = isLast ? '└─' : '├─';
         folderDiv.innerHTML = `
-          <svg class="folder-chevron" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0; margin-right: 4px;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-          <svg class="folder-svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="flex-shrink: 0; margin-right: 8px;">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-          </svg>
+          <span class="tree-prefix">${prefix}</span>
+          <span class="tree-connector">${connector}</span>
+          <span class="tree-icon">📁</span>
           <span class="file-tree-name">${escapeHtml(node.name)}</span>
         `;
 
@@ -2870,8 +2870,11 @@
         if (node.children && node.children.length > 0) {
           const childList = document.createElement('ul');
           childList.className = 'file-tree-list file-tree-children';
-          node.children.forEach(child => {
-            childList.appendChild(createTreeNode(child));
+
+          const childPrefix = prefix + (isLast ? '   ' : '│  ');
+          node.children.forEach((child, index) => {
+            const isLastChild = index === node.children.length - 1;
+            childList.appendChild(createTreeNode(child, isLastChild, childPrefix));
           });
           li.appendChild(childList);
         }
@@ -2879,12 +2882,12 @@
         const fileDiv = document.createElement('div');
         fileDiv.className = 'file-tree-file';
         fileDiv.dataset.path = node.path;
+
+        const connector = isLast ? '└─' : '├─';
         fileDiv.innerHTML = `
-          <span class="file-tree-icon">
-            <svg class="file-svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-          </span>
+          <span class="tree-prefix">${prefix}</span>
+          <span class="tree-connector">${connector}</span>
+          <span class="tree-icon">📄</span>
           <span class="file-tree-name">${escapeHtml(node.name)}</span>
         `;
 
