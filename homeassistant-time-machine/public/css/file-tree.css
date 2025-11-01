@@ -59,7 +59,7 @@ body[data-theme='light'] .panel--files .panel-header {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 24px;
+  padding: 16px;
 }
 
 .file-tree-list {
@@ -237,7 +237,8 @@ body[data-theme='light'] .panel--files .panel-header {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  margin: 0 24px 24px 24px;
+  padding: 16px;
+  margin: 0;
 }
 
 .diff-header {
@@ -366,7 +367,7 @@ body[data-theme='light'] .panel--files .panel-header {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin: 0 24px 12px 24px;
+  margin: 0 0 12px 0;
   padding: 10px;
   background-color: var(--input-bg);
   border-radius: 8px;
@@ -404,7 +405,7 @@ body[data-theme='light'] .panel--files .panel-header {
 .file-actions {
   display: flex;
   gap: 8px;
-  margin: 0 24px 12px 24px;
+  margin: 0 0 12px 0;
   flex-wrap: wrap;
 }
 
