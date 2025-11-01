@@ -2985,7 +2985,7 @@
 
       if (node.type === 'folder') {
         const folderDiv = document.createElement('div');
-        folderDiv.className = 'file-tree-folder';
+        folderDiv.className = 'file-tree-folder list-item';
         folderDiv.innerHTML = `
           <span class="tree-icon">📁</span>
           <span class="file-tree-name">${escapeHtml(node.name)}</span>
@@ -3008,7 +3008,7 @@
         }
       } else {
         const fileDiv = document.createElement('div');
-        fileDiv.className = node.deleted ? 'file-tree-file deleted' : 'file-tree-file';
+        fileDiv.className = node.deleted ? 'file-tree-file list-item deleted' : 'file-tree-file list-item';
         fileDiv.dataset.path = node.path;
 
         // Use trash icon for deleted files, regular file icon otherwise
